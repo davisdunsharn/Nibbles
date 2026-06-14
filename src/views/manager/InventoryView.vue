@@ -1,68 +1,222 @@
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-nibbles-dark">Inventory</h1>
-        <p class="text-gray-500 text-sm mt-1">Stock levels at your branch</p>
+  <div class="h-full overflow-auto bg-gray-50">
+    <div class="p-6">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold text-nibbles-dark mb-2">Inventory Management</h1>
+        <p class="text-gray-600">Real-time stock levels across branches</p>
       </div>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div class="p-4 border-b border-gray-100">
-        <input v-model="search" type="text" placeholder="Search products..." class="w-full max-w-xs px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
+
+      <!-- Stats -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border-l-4 border-green-500">
+          <p class="text-sm text-gray-600 mb-1">In Stock</p>
+          <p class="text-2xl font-bold text-green-600">{{ inStockCount }}</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 border-l-4 border-yellow-500">
+          <p class="text-sm text-gray-600 mb-1">Low Stock</p>
+          <p class="text-2xl font-bold text-yellow-600">{{ lowStockCount }}</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 border-l-4 border-red-500">
+          <p class="text-sm text-gray-600 mb-1">Out of Stock</p>
+          <p class="text-2xl font-bold text-red-600">{{ outOfStockCount }}</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 border-l-4 border-blue-500">
+          <p class="text-sm text-gray-600 mb-1">Total Products</p>
+          <p class="text-2xl font-bold text-blue-600">{{ inventory.length }}</p>
+        </div>
       </div>
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="text-left text-gray-400 border-b border-gray-100 bg-gray-50">
-            <th class="px-4 py-3 font-medium">Product</th>
-            <th class="px-4 py-3 font-medium">Category</th>
-            <th class="px-4 py-3 font-medium">On Hand</th>
-            <th class="px-4 py-3 font-medium">Reorder At</th>
-            <th class="px-4 py-3 font-medium">Status</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-50">
-          <tr v-if="loading"><td colspan="5" class="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
-          <tr v-else-if="filtered.length === 0"><td colspan="5" class="px-4 py-8 text-center text-gray-400">No products found.</td></tr>
-          <tr v-for="item in filtered" :key="item.id" class="hover:bg-gray-50">
-            <td class="px-4 py-3 font-medium text-gray-800">{{ item.products?.name }}</td>
-            <td class="px-4 py-3 text-gray-500 capitalize">{{ item.products?.category }}</td>
-            <td class="px-4 py-3 font-semibold text-nibbles-dark">{{ item.quantity_on_hand }}</td>
-            <td class="px-4 py-3 text-gray-500">{{ item.reorder_threshold }}</td>
-            <td class="px-4 py-3">
-              <span :class="stockStatus(item).class" class="px-2 py-0.5 rounded text-xs font-medium">{{ stockStatus(item).label }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+
+      <!-- Filters -->
+      <div class="bg-white rounded-xl p-4 mb-6 flex gap-3">
+        <input v-model="search" type="text" placeholder="Search products..." 
+          class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
+        <select v-model="filterStatus" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
+          <option value="">All Status</option>
+          <option value="in_stock">In Stock</option>
+          <option value="low_stock">Low Stock</option>
+          <option value="out_of_stock">Out of Stock</option>
+        </select>
+        <button @click="refreshInventory" class="px-4 py-2 bg-nibbles-red text-white rounded-lg text-sm font-semibold hover:bg-nibbles-red-dark transition-colors">
+          🔄 Refresh
+        </button>
+      </div>
+
+      <!-- Inventory table -->
+      <div class="bg-white rounded-xl overflow-hidden shadow">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-6 py-3 text-left font-semibold text-gray-700">Product</th>
+              <th class="px-6 py-3 text-left font-semibold text-gray-700">Current Stock</th>
+              <th class="px-6 py-3 text-left font-semibold text-gray-700">Reorder Level</th>
+              <th class="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
+              <th class="px-6 py-3 text-left font-semibold text-gray-700">Last Updated</th>
+              <th class="px-6 py-3 text-left font-semibold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="filteredInventory.length === 0" class="border-b border-gray-200 hover:bg-gray-50">
+              <td colspan="6" class="px-6 py-8 text-center text-gray-500">No inventory records found</td>
+            </tr>
+            <tr v-for="item in filteredInventory" :key="item.product_id" class="border-b border-gray-200 hover:bg-gray-50">
+              <td class="px-6 py-4">
+                <div>
+                  <p class="font-semibold text-gray-800">{{ item.product_name }}</p>
+                  <p class="text-xs text-gray-500">{{ item.product_id }}</p>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <p :class="item.quantity_on_hand <= 0 ? 'text-red-600 font-bold' : 'text-gray-800'">
+                  {{ item.quantity_on_hand }} units
+                </p>
+              </td>
+              <td class="px-6 py-4 text-gray-600">{{ item.reorder_level }} units</td>
+              <td class="px-6 py-4">
+                <span :class="statusClass(item.status)" class="px-3 py-1 rounded-full text-xs font-semibold">
+                  {{ item.status === 'in_stock' ? '✓ In Stock' : item.status === 'low_stock' ? '⚠ Low Stock' : '✕ Out of Stock' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-xs">{{ formatDate(item.last_updated) }}</td>
+              <td class="px-6 py-4">
+                <button @click="openRestockModal(item)" class="text-blue-600 hover:text-blue-800 font-semibold text-xs">
+                  📦 Restock
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Restock modal -->
+      <div v-if="showRestock" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
+          <h2 class="text-lg font-bold text-nibbles-dark mb-4">Restock: {{ restockItem?.product_name }}</h2>
+          
+          <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-1">Current Stock: <span class="font-bold text-nibbles-red">{{ restockItem?.quantity_on_hand }} units</span></p>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Quantity to Add</label>
+            <input v-model.number="restockQuantity" type="number" min="1" 
+              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
+          </div>
+
+          <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p class="text-xs text-gray-600"><span class="font-semibold">New Stock:</span> {{ (restockItem?.quantity_on_hand || 0) + (restockQuantity || 0) }} units</p>
+          </div>
+
+          <div v-if="restockError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-xs text-red-600">{{ restockError }}</p>
+          </div>
+
+          <div class="flex gap-3">
+            <button @click="showRestock = false" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+              Cancel
+            </button>
+            <button @click="confirmRestock" :disabled="restocking" 
+              class="flex-1 bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-nibbles-red-dark disabled:opacity-50 transition-colors">
+              {{ restocking ? 'Restocking...' : 'Confirm' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../stores/auth'
+import { supabase } from '../../lib/supabase'
 
 const auth = useAuthStore()
 const inventory = ref([])
 const loading = ref(true)
 const search = ref('')
+const filterStatus = ref('')
+const showRestock = ref(false)
+const restockItem = ref(null)
+const restockQuantity = ref(0)
+const restocking = ref(false)
+const restockError = ref('')
 
-const filtered = computed(() => {
-  if (!search.value) return inventory.value
-  return inventory.value.filter(i => i.products?.name?.toLowerCase().includes(search.value.toLowerCase()))
+const filteredInventory = computed(() => {
+  return inventory.value.filter(item => {
+    const matchSearch = !search.value || item.product_name.toLowerCase().includes(search.value.toLowerCase())
+    const matchStatus = !filterStatus.value || item.status === filterStatus.value
+    return matchSearch && matchStatus
+  })
 })
 
-function stockStatus(item) {
-  if (item.quantity_on_hand === 0) return { label: 'Out of stock', class: 'bg-red-100 text-red-700' }
-  if (item.quantity_on_hand <= item.reorder_threshold) return { label: 'Low stock', class: 'bg-yellow-100 text-yellow-700' }
-  return { label: 'In stock', class: 'bg-green-100 text-green-700' }
+const inStockCount = computed(() => inventory.value.filter(i => i.status === 'in_stock').length)
+const lowStockCount = computed(() => inventory.value.filter(i => i.status === 'low_stock').length)
+const outOfStockCount = computed(() => inventory.value.filter(i => i.status === 'out_of_stock').length)
+
+function statusClass(status) {
+  return {
+    'in_stock': 'bg-green-100 text-green-800',
+    'low_stock': 'bg-yellow-100 text-yellow-800',
+    'out_of_stock': 'bg-red-100 text-red-800'
+  }[status] || 'bg-gray-100 text-gray-800'
 }
 
-onMounted(async () => {
+function formatDate(date) {
+  return new Date(date).toLocaleString('en-ZA', { 
+    dateStyle: 'short',
+    timeStyle: 'short'
+  })
+}
+
+async function refreshInventory() {
   loading.value = true
-  const { data } = await supabase.from('inventory').select('*, products(name, category)').eq('branch_id', auth.branchId).order('quantity_on_hand', { ascending: true })
-  if (data) inventory.value = data
-  loading.value = false
-})
+  try {
+    const { data, error } = await supabase.rpc('get_branch_inventory', { 
+      p_branch_id: auth.branchId 
+    })
+    
+    if (error) throw error
+    inventory.value = data || []
+  } catch (err) {
+    console.error('Error loading inventory:', err.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+function openRestockModal(item) {
+  restockItem.value = item
+  restockQuantity.value = 0
+  restockError.value = ''
+  showRestock.value = true
+}
+
+async function confirmRestock() {
+  if (!restockQuantity.value || restockQuantity.value <= 0) {
+    restockError.value = 'Please enter a valid quantity'
+    return
+  }
+
+  restocking.value = true
+  restockError.value = ''
+  
+  try {
+    const { data, error } = await supabase.rpc('restock_inventory', {
+      p_product_id: restockItem.value.product_id,
+      p_branch_id: auth.branchId,
+      p_quantity: restockQuantity.value
+    })
+    
+    if (error) throw error
+    
+    showRestock.value = false
+    await refreshInventory()
+  } catch (err) {
+    restockError.value = err.message
+  } finally {
+    restocking.value = false
+  }
+}
+
+onMounted(refreshInventory)
 </script>

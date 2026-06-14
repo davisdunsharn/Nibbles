@@ -4,9 +4,7 @@
     <aside class="w-64 bg-nibbles-dark flex flex-col flex-shrink-0">
       <div class="p-6 border-b border-gray-700">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 bg-nibbles-red rounded-lg flex items-center justify-center">
-            <span class="text-white text-sm font-bold">N</span>
-          </div>
+          <img src="@/assets/nibbles-logo.png" alt="Nibbles Bakery" class="h-8 object-contain" />
           <div>
             <p class="text-white font-semibold text-sm">Nibbles Bakery</p>
             <p class="text-gray-400 text-xs">Admin Portal</p>

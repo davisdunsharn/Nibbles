@@ -3,11 +3,11 @@
     <div class="w-full max-w-md">
       <div class="bg-white rounded-2xl shadow-lg p-8">
         <div class="text-center mb-8">
-          <div class="w-16 h-16 bg-nibbles-red rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-white text-2xl font-bold">N</span>
+          <div class="h-16 mx-auto mb-4 flex items-center justify-center">
+            <img src="@/assets/nibbles-logo.png" alt="Nibbles Bakery" class="h-14 object-contain bg-transparent" />
           </div>
-          <h1 class="text-2xl font-bold text-nibbles-dark">Nibbles Bakery</h1>
-          <p class="text-gray-500 text-sm mt-1">Management System</p>
+          <h1 class="text-3xl font-bold text-nibbles-dark tracking-tight">Nibbles Bakery</h1>
+          <p class="text-gray-500 text-sm mt-2 font-medium">Management System</p>
         </div>
 
         <form @submit.prevent="handleLogin">

@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": {
+      "db_url": "postgresql://postgres.PROJECT_REF:DATABASE_PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres",
+      "early_schema_creation": false
+    }
+  },
+  "functions": [
+    {
+      "name": "create-user",
+      "importMapPath": null,
+      "envPath": ".env"
+    }
+  ]
+}

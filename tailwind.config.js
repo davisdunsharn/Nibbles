@@ -12,7 +12,15 @@ export default {
           dark: '#1A1A1A',
         }
       },
-      fontFamily: { sans: ['Inter', 'sans-serif'] }
+      fontFamily: { 
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        heading: ['Inter', 'system-ui', 'sans-serif']
+      },
+      letterSpacing: {
+        tight: '-0.01em',
+        normal: '0em',
+        wide: '0.025em'
+      }
     },
   },
   plugins: [],

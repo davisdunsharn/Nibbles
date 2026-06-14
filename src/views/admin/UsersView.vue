@@ -56,20 +56,21 @@
                 class="px-2 py-0.5 rounded text-xs font-medium">{{ u.is_active ? 'Active' : 'Inactive' }}</span>
             </td>
             <td class="px-4 py-3">
-              <button @click="toggleStatus(u)" class="text-xs text-gray-500 hover:text-nibbles-red transition-colors">
-                {{ u.is_active ? 'Deactivate' : 'Activate' }}
-              </button>
+              <div class="flex gap-2">
+                <button @click="editUser(u)" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">Edit</button>
+                <button @click="deleteUser(u)" class="text-xs text-red-600 hover:text-red-800 font-semibold">Delete</button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Create User Modal -->
+    <!-- User Modal -->
     <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div class="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h2 class="text-lg font-bold text-nibbles-dark mb-4">Create New User</h2>
-        <form @submit.prevent="createUser" class="space-y-4">
+        <h2 class="text-lg font-bold text-nibbles-dark mb-4">{{ editingId ? 'Edit User' : 'Create New User' }}</h2>
+        <form @submit.prevent="saveUser" class="space-y-4">
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">First name</label>
@@ -80,11 +81,68 @@
               <input v-model="form.last_name" type="text" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
             </div>
           </div>
-          <div>
+          <div v-if="!editingId">
             <label class="block text-sm font-medium text-gray-700 mb-1">Email address</label>
             <input v-model="form.email" type="email" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
           </div>
+          <div v-if="!editingId">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Temporary password</label>
+            <input v-model="form.password" type="password" required minlength="8" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
+          </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select v-model="form.role" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
+              <option value="">Select role</option>
+              <option value="manager">Manager</option>
+              <option value="cashier">Cashier</option>
+            </select>
+          </div>
+          <div v-if="form.role !== 'admin'">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+            <select v-model="form.branch_id" :required="form.role !== ''" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
+              <option value="">Select branch</option>
+              <option v-for="b in branchList" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="flex items-center">
+              <input v-model="form.is_active" type="checkbox" class="w-4 h-4 text-nibbles-red rounded focus:ring-nibbles-red" />
+              <span class="ml-2 text-sm text-gray-700">Active</span>
+            </label>
+          </div>
+          <div v-if="formError" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">{{ formError }}</div>
+          <div class="flex gap-3 pt-2">
+            <button type="button" @click="closeModal" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button type="submit" :disabled="creating" class="flex-1 bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-nibbles-red-dark disabled:opacity-60">
+              {{ creating ? 'Saving...' : editingId ? 'Update' : 'Create User' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
+        <h2 class="text-lg font-bold text-nibbles-dark mb-2">Delete User?</h2>
+        <p class="text-gray-600 mb-6">Are you sure you want to delete <span class="font-semibold">{{ deleteItem?.first_name }} {{ deleteItem?.last_name }}</span>? This cannot be undone.</p>
+        <div class="flex gap-3">
+          <button @click="showDeleteConfirm = false" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button @click="confirmDelete" :disabled="deleting" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-60">
+            {{ deleting ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
+            </div>
+          </div>
+          <div v-if="!editingId">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+            <input v-model="form.email" type="email" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
+          </div>
+          <div v-if="!editingId">
             <label class="block text-sm font-medium text-gray-700 mb-1">Temporary password</label>
             <input v-model="form.password" type="password" required minlength="8" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
           </div>
@@ -126,9 +184,13 @@ const loading = ref(true)
 const search = ref('')
 const filterRole = ref('')
 const showModal = ref(false)
+const showDeleteConfirm = ref(false)
 const creating = ref(false)
+const deleting = ref(false)
 const formError = ref('')
-const form = ref({ first_name: '', last_name: '', email: '', password: '', role: '', branch_id: '' })
+const editingId = ref(null)
+const deleteItem = ref(null)
+const form = ref({ first_name: '', last_name: '', email: '', password: '', role: '', branch_id: '', is_active: true })
 
 const filteredUsers = computed(() => {
   return users.value.filter(u => {
@@ -153,30 +215,49 @@ async function loadData() {
   loading.value = false
 }
 
-async function toggleStatus(user) {
-  const { error } = await supabase.from('user_profiles').update({ is_active: !user.is_active }).eq('id', user.id)
-  if (!error) user.is_active = !user.is_active
-}
-
-async function createUser() {
+async function saveUser() {
   creating.value = true
   formError.value = ''
   try {
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: form.value.email,
-      password: form.value.password,
-      email_confirm: true
-    })
-    if (error) throw error
-    const { error: profileError } = await supabase.from('user_profiles').insert({
-      id: data.user.id,
-      first_name: form.value.first_name,
-      last_name: form.value.last_name,
-      role: form.value.role,
-      branch_id: form.value.branch_id || null,
-      is_active: true
-    })
-    if (profileError) throw profileError
+    if (editingId.value) {
+      // Update existing user
+      const { error } = await supabase.from('user_profiles').update({
+        first_name: form.value.first_name,
+        last_name: form.value.last_name,
+        role: form.value.role,
+        branch_id: form.value.branch_id || null,
+        is_active: form.value.is_active
+      }).eq('id', editingId.value)
+      
+      if (error) throw error
+    } else {
+      // Create new user
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) throw new Error('Not authenticated')
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.session.access_token}`
+          },
+          body: JSON.stringify({
+            email: form.value.email,
+            password: form.value.password,
+            first_name: form.value.first_name,
+            last_name: form.value.last_name,
+            role: form.value.role,
+            branch_id: form.value.branch_id || null
+          })
+        }
+      )
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to create user')
+    }
+    
     closeModal()
     await loadData()
   } catch (err) {
@@ -186,10 +267,51 @@ async function createUser() {
   }
 }
 
+function editUser(user) {
+  editingId.value = user.id
+  form.value = {
+    first_name: user.first_name,
+    last_name: user.last_name,
+    email: user.email || '',
+    password: '',
+    role: user.role,
+    branch_id: user.branch_id || '',
+    is_active: user.is_active
+  }
+  showModal.value = true
+}
+
+function deleteUser(user) {
+  deleteItem.value = user
+  showDeleteConfirm.value = true
+}
+
+async function confirmDelete() {
+  if (!deleteItem.value) return
+  deleting.value = true
+  try {
+    const { error } = await supabase.from('user_profiles').delete().eq('id', deleteItem.value.id)
+    if (error) throw error
+    showDeleteConfirm.value = false
+    deleteItem.value = null
+    await loadData()
+  } catch (err) {
+    console.error('Delete error:', err.message)
+  } finally {
+    deleting.value = false
+  }
+}
+
+async function toggleStatus(user) {
+  const { error } = await supabase.from('user_profiles').update({ is_active: !user.is_active }).eq('id', user.id)
+  if (!error) user.is_active = !user.is_active
+}
+
 function closeModal() {
   showModal.value = false
+  editingId.value = null
   formError.value = ''
-  form.value = { first_name: '', last_name: '', email: '', password: '', role: '', branch_id: '' }
+  form.value = { first_name: '', last_name: '', email: '', password: '', role: '', branch_id: '', is_active: true }
 }
 
 onMounted(loadData)

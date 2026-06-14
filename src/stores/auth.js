@@ -44,9 +44,26 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(email, password) {
+    console.log('🔐 Login attempt for:', email)
+    console.log('📡 Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
+    
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
+    
+    if (error) {
+      console.error('❌ Auth login error:', error)
+      console.error('Error details:', { code: error.code, status: error.status, message: error.message })
+      throw error
+    }
+    
+    console.log('✓ Auth success for user:', data.user.id)
     profile.value = await fetchProfile(data.user.id)
+    if (!profile.value) {
+      console.error('Profile not found for user:', data.user.id)
+      user.value = data.user
+      throw new Error('User profile not found in system. Contact administrator.')
+    }
+    user.value = data.user
+    console.log('✓ Login complete:', profile.value.first_name, profile.value.last_name)
     return profile.value
   }
 
@@ -56,5 +73,12 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = null
   }
 
-  return { user, profile, loading, isAdmin, isManager, isCashier, branchId, role, fullName, init, login, logout }
+  async function resetPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw error
+  }
+
+  return { user, profile, loading, isAdmin, isManager, isCashier, branchId, role, fullName, init, login, logout, resetPassword }
 })

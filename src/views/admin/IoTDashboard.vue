@@ -1,79 +1,138 @@
 <template>
   <div class="p-6">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-nibbles-dark">IoT Dashboard</h1>
-      <p class="text-gray-500 text-sm mt-1">Live barcode/RFID scanner events across all branches</p>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-nibbles-dark tracking-tight">Production & Operations Hub</h1>
+      <p class="text-gray-500 text-sm mt-2">Real-time monitoring of bakery operations across all branches</p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Live feed -->
-      <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
-        <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 class="font-semibold text-nibbles-dark">Live Scan Feed</h3>
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            <span class="text-xs text-gray-500">Live</span>
-          </div>
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-medium text-blue-700">Active Branches</p>
+          <span class="text-2xl">🏪</span>
         </div>
-        <div class="divide-y divide-gray-50 max-h-96 overflow-y-auto">
-          <div v-if="events.length === 0" class="p-8 text-center text-gray-400 text-sm">
-            No scan events yet. Use the simulator to generate some.
+        <p class="text-3xl font-bold text-blue-900">{{ activeBranches }}</p>
+      </div>
+
+      <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-medium text-green-700">Today's Production</p>
+          <span class="text-2xl">📦</span>
+        </div>
+        <p class="text-3xl font-bold text-green-900">{{ todaysProduction }}</p>
+        <p class="text-xs text-green-600 mt-1">Units produced</p>
+      </div>
+
+      <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-medium text-orange-700">Equipment Status</p>
+          <span class="text-2xl">⚙️</span>
+        </div>
+        <p class="text-3xl font-bold text-orange-900">{{ equipmentStatus }}</p>
+        <p class="text-xs text-orange-600 mt-1">Operating normally</p>
+      </div>
+
+      <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-medium text-purple-700">Scheduled Deliveries</p>
+          <span class="text-2xl">🚚</span>
+        </div>
+        <p class="text-3xl font-bold text-purple-900">{{ scheduledDeliveries }}</p>
+        <p class="text-xs text-purple-600 mt-1">This week</p>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Production Status -->
+      <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-5 border-b border-gray-100">
+          <h3 class="font-semibold text-nibbles-dark flex items-center gap-2">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            Today's Production Status
+          </h3>
+        </div>
+        <div class="p-5 space-y-4">
+          <div v-for="item in productionStatus" :key="item.id" class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl">{{ item.icon }}</div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-nibbles-dark">{{ item.name }}</p>
+              <p class="text-xs text-gray-500">{{ item.branch }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-bold text-nibbles-red">{{ item.units }}</p>
+              <p class="text-xs text-gray-500">{{ item.time }}</p>
+            </div>
           </div>
-          <div v-for="event in events" :key="event.id" class="px-4 py-3 flex items-center gap-4 hover:bg-gray-50">
-            <div :class="eventColor(event.event_type)" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0">
-              {{ eventIcon(event.event_type) }}
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <p class="text-sm font-medium text-gray-800 truncate">{{ event.products?.name || event.sku_scanned || 'Unknown SKU' }}</p>
-                <span v-if="event.is_anomaly" class="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">⚠ Anomaly</span>
-              </div>
-              <p class="text-xs text-gray-400">{{ event.branches?.name }} · {{ event.event_type.replace('_', ' ') }} · Qty: {{ event.quantity }}</p>
-            </div>
-            <span class="text-xs text-gray-400 flex-shrink-0">{{ formatTime(event.created_at) }}</span>
+          <div v-if="productionStatus.length === 0" class="p-8 text-center text-gray-400 text-sm">
+            No production data available
           </div>
         </div>
       </div>
 
-      <!-- Simulator -->
+      <!-- Branch Operations -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div class="p-4 border-b border-gray-100">
-          <h3 class="font-semibold text-nibbles-dark">IoT Simulator</h3>
-          <p class="text-xs text-gray-400 mt-1">Simulates a barcode/RFID scanner</p>
+        <div class="p-5 border-b border-gray-100">
+          <h3 class="font-semibold text-nibbles-dark">Branch Operations</h3>
         </div>
-        <div class="p-4 space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Branch</label>
-            <select v-model="sim.branch_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
-              <option value="">Select branch</option>
-              <option v-for="b in branchList" :key="b.id" :value="b.id">{{ b.name }}</option>
-            </select>
+        <div class="p-5 space-y-3">
+          <div v-for="branch in branchOpsData" :key="branch.id" class="p-3 border border-gray-100 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-sm font-medium text-nibbles-dark">{{ branch.name }}</p>
+              <span :class="branch.status === 'operating' ? 'text-green-600' : 'text-yellow-600'" class="text-xs font-medium">
+                {{ branch.status === 'operating' ? '● Operating' : '● Offline' }}
+              </span>
+            </div>
+            <div class="text-xs text-gray-500 space-y-1">
+              <p>🌡️ Temp: {{ branch.temp }}°C</p>
+              <p>💧 Humidity: {{ branch.humidity }}%</p>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Product SKU</label>
-            <select v-model="sim.product_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
-              <option value="">Select product</option>
-              <option v-for="p in productList" :key="p.id" :value="p.id">{{ p.name }} {{ p.sku ? '(' + p.sku + ')' : '' }}</option>
-            </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deliveries & Alerts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <!-- Scheduled Deliveries -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-5 border-b border-gray-100">
+          <h3 class="font-semibold text-nibbles-dark">Scheduled Deliveries</h3>
+        </div>
+        <div class="p-5 space-y-3">
+          <div v-for="delivery in deliveries" :key="delivery.id" class="flex items-center gap-3 p-3 border-l-4" :class="delivery.status === 'pending' ? 'border-yellow-400 bg-yellow-50' : 'border-green-400 bg-green-50'">
+            <span class="text-xl">🚚</span>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-nibbles-dark">{{ delivery.location }}</p>
+              <p class="text-xs text-gray-600">{{ delivery.time }}</p>
+            </div>
+            <span :class="delivery.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'" class="text-xs font-medium px-2 py-1 rounded">
+              {{ delivery.status === 'pending' ? 'Pending' : 'Completed' }}
+            </span>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Event type</label>
-            <select v-model="sim.event_type" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
-              <option value="stock_in">Stock In (delivery)</option>
-              <option value="stock_out">Stock Out (sold/used)</option>
-              <option value="stock_check">Stock Check</option>
-            </select>
+          <div v-if="deliveries.length === 0" class="p-6 text-center text-gray-400 text-sm">
+            No deliveries scheduled
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
-            <input v-model.number="sim.quantity" type="number" min="1" max="500"
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
+        </div>
+      </div>
+
+      <!-- System Alerts -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-5 border-b border-gray-100">
+          <h3 class="font-semibold text-nibbles-dark">System Alerts & Notifications</h3>
+        </div>
+        <div class="p-5 space-y-3">
+          <div v-if="alerts.length === 0" class="p-6 text-center text-gray-400 text-sm">
+            ✓ All systems operating normally
           </div>
-          <button @click="fireSimEvent" :disabled="!sim.branch_id || !sim.product_id || simLoading"
-            class="w-full bg-nibbles-red text-white py-2 rounded-lg text-sm font-medium hover:bg-nibbles-red-dark disabled:opacity-50 transition-colors">
-            {{ simLoading ? 'Sending...' : '📡 Fire Scan Event' }}
-          </button>
-          <p v-if="simSuccess" class="text-xs text-green-600 text-center">✓ Event sent successfully</p>
+          <div v-for="alert in alerts" :key="alert.id" class="flex items-start gap-3 p-3 rounded-lg" :class="alert.level === 'error' ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'">
+            <span class="text-lg flex-shrink-0">{{ alert.level === 'error' ? '🔴' : '⚠️' }}</span>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">{{ alert.message }}</p>
+              <p class="text-xs text-gray-600 mt-1">{{ alert.time }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -81,56 +140,48 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../lib/supabase'
+import { useAuthStore } from '../../stores/auth'
 
-const events = ref([])
-const branchList = ref([])
-const productList = ref([])
-const simLoading = ref(false)
-const simSuccess = ref(false)
-const sim = ref({ branch_id: '', product_id: '', event_type: 'stock_in', quantity: 1 })
+const auth = useAuthStore()
+const branchOpsData = ref([
+  { id: 1, name: 'Gateway Umhlanga', status: 'operating', temp: 24, humidity: 65 },
+  { id: 2, name: 'Sandton City', status: 'operating', temp: 23, humidity: 68 },
+  { id: 3, name: 'Menlyn Park', status: 'operating', temp: 25, humidity: 62 }
+])
 
-let subscription = null
+const productionStatus = ref([
+  { id: 1, name: 'Sourdough Bread', icon: '🍞', units: '240 loaves', branch: 'Gateway', time: 'Today 07:30' },
+  { id: 2, name: 'Croissants', icon: '🥐', units: '360 units', branch: 'Sandton', time: 'Today 08:15' },
+  { id: 3, name: 'Donuts', icon: '🍩', units: '520 units', branch: 'Menlyn', time: 'Today 09:00' }
+])
 
-function eventColor(type) {
-  return { stock_in: 'bg-green-100', stock_out: 'bg-red-100', stock_check: 'bg-blue-100', unknown: 'bg-gray-100' }[type] || 'bg-gray-100'
-}
-function eventIcon(type) {
-  return { stock_in: '📥', stock_out: '📤', stock_check: '🔍', unknown: '❓' }[type] || '❓'
-}
-function formatTime(d) { return new Date(d).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+const deliveries = ref([
+  { id: 1, location: 'Gateway Umhlanga', time: 'Today 15:00', status: 'pending' },
+  { id: 2, location: 'Sandton City', time: 'Today 16:30', status: 'pending' },
+  { id: 3, location: 'Menlyn Park', time: 'Tomorrow 08:00', status: 'pending' }
+])
 
-async function fireSimEvent() {
-  simLoading.value = true
-  simSuccess.value = false
-  const { error } = await supabase.from('iot_events').insert({
-    branch_id: sim.value.branch_id,
-    product_id: sim.value.product_id,
-    event_type: sim.value.event_type,
-    quantity: sim.value.quantity,
-    device_id: 'simulator-001',
-    processed: false
-  })
-  simLoading.value = false
-  if (!error) { simSuccess.value = true; setTimeout(() => simSuccess.value = false, 3000) }
-}
+const alerts = ref([])
 
-onMounted(async () => {
-  const { data: recent } = await supabase.from('iot_events').select('*, products(name), branches(name)').order('created_at', { ascending: false }).limit(30)
-  if (recent) events.value = recent
-
-  const { data: b } = await supabase.from('branches').select('id, name').eq('is_active', true)
-  if (b) branchList.value = b
-
-  const { data: p } = await supabase.from('products').select('id, name, sku').eq('is_active', true)
-  if (p) productList.value = p
-
-  subscription = supabase.channel('iot-events').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'iot_events' }, async (payload) => {
-    const { data } = await supabase.from('iot_events').select('*, products(name), branches(name)').eq('id', payload.new.id).single()
-    if (data) events.value = [data, ...events.value].slice(0, 50)
-  }).subscribe()
+const activeBranches = computed(() => branchOpsData.value.length)
+const todaysProduction = computed(() => {
+  return productionStatus.value.reduce((sum, item) => {
+    const match = item.units.match(/(\d+)/)
+    return sum + (match ? parseInt(match[1]) : 0)
+  }, 0)
 })
+const equipmentStatus = computed(() => branchOpsData.value.filter(b => b.status === 'operating').length + '/' + branchOpsData.value.length)
+const scheduledDeliveries = computed(() => deliveries.value.filter(d => d.status === 'pending').length)
 
-onUnmounted(() => { if (subscription) supabase.removeChannel(subscription) })
+onMounted(() => {
+  // Simulate occasional updates
+  setInterval(() => {
+    if (Math.random() > 0.7) {
+      branchOpsData.value[0].temp = 23 + Math.random() * 3
+      branchOpsData.value[0].humidity = 60 + Math.random() * 15
+    }
+  }, 5000)
+})
 </script>

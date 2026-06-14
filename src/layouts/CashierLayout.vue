@@ -2,9 +2,7 @@
   <div class="h-screen bg-gray-100 flex flex-col">
     <header class="bg-nibbles-dark px-6 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-7 h-7 bg-nibbles-red rounded flex items-center justify-center">
-          <span class="text-white text-xs font-bold">N</span>
-        </div>
+        <img src="@/assets/nibbles-logo.png" alt="Nibbles Bakery" class="h-7 object-contain" />
         <span class="text-white font-semibold text-sm">Nibbles POS</span>
       </div>
       <div class="flex items-center gap-4">

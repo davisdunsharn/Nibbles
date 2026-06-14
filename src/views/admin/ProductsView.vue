@@ -42,9 +42,10 @@
               </span>
             </td>
             <td class="px-4 py-3">
-              <button @click="toggleProduct(p)" class="text-xs text-gray-400 hover:text-nibbles-red transition-colors">
-                {{ p.is_active ? 'Deactivate' : 'Activate' }}
-              </button>
+              <div class="flex gap-2">
+                <button @click="editProduct(p)" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">Edit</button>
+                <button @click="deleteProduct(p)" class="text-xs text-red-600 hover:text-red-800 font-semibold">Delete</button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -53,8 +54,8 @@
 
     <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div class="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h2 class="text-lg font-bold text-nibbles-dark mb-4">Add Product</h2>
-        <form @submit.prevent="createProduct" class="space-y-4">
+        <h2 class="text-lg font-bold text-nibbles-dark mb-4">{{ editingId ? 'Edit Product' : 'Add Product' }}</h2>
+        <form @submit.prevent="saveProduct" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Product name</label>
             <input v-model="form.name" type="text" required placeholder="e.g. White Bread Loaf 700g" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
@@ -80,14 +81,36 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-gray-400 font-normal">(optional)</span></label>
             <textarea v-model="form.description" rows="2" placeholder="Short product description" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red resize-none"></textarea>
           </div>
+          <div>
+            <label class="flex items-center">
+              <input v-model="form.is_active" type="checkbox" class="w-4 h-4 text-nibbles-red rounded focus:ring-nibbles-red" />
+              <span class="ml-2 text-sm text-gray-700">Active</span>
+            </label>
+          </div>
           <div v-if="formError" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">{{ formError }}</div>
           <div class="flex gap-3 pt-2">
             <button type="button" @click="closeModal" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
             <button type="submit" :disabled="saving" class="flex-1 bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-nibbles-red-dark disabled:opacity-60">
-              {{ saving ? 'Saving...' : 'Add Product' }}
+              {{ saving ? 'Saving...' : editingId ? 'Update' : 'Add' }}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
+        <h2 class="text-lg font-bold text-nibbles-dark mb-2">Delete Product?</h2>
+        <p class="text-gray-600 mb-6">Are you sure you want to delete <span class="font-semibold">{{ deleteItem?.name }}</span>? This cannot be undone.</p>
+        <div class="flex gap-3">
+          <button @click="showDeleteConfirm = false" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button @click="confirmDelete" :disabled="deleting" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-60">
+            {{ deleting ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -102,11 +125,15 @@ const loading = ref(true)
 const search = ref('')
 const filterCat = ref('')
 const showModal = ref(false)
+const showDeleteConfirm = ref(false)
 const saving = ref(false)
+const deleting = ref(false)
 const formError = ref('')
 const sortCol = ref('name')
 const sortDir = ref('asc')
-const form = ref({ name: '', category: '', unit_price: '', sku: '', description: '' })
+const editingId = ref(null)
+const deleteItem = ref(null)
+const form = ref({ name: '', category: '', unit_price: '', sku: '', description: '', is_active: true })
 
 const filtered = computed(() => {
   let list = products.value.filter(p => {
@@ -143,14 +170,83 @@ async function createProduct() {
   saving.value = false
 }
 
+async function saveProduct() {
+  saving.value = true; formError.value = ''
+  try {
+    if (editingId.value) {
+      const { error } = await supabase.from('products').update({
+        name: form.value.name,
+        category: form.value.category,
+        unit_price: form.value.unit_price,
+        sku: form.value.sku || null,
+        description: form.value.description || null,
+        is_active: form.value.is_active
+      }).eq('id', editingId.value)
+      if (error) throw error
+    } else {
+      const { error } = await supabase.from('products').insert({
+        name: form.value.name,
+        category: form.value.category,
+        unit_price: form.value.unit_price,
+        sku: form.value.sku || null,
+        description: form.value.description || null,
+        is_active: form.value.is_active
+      })
+      if (error) throw error
+    }
+    closeModal()
+    await load()
+  } catch (err) {
+    formError.value = err.message
+  } finally {
+    saving.value = false
+  }
+}
+
+function editProduct(p) {
+  editingId.value = p.id
+  form.value = {
+    name: p.name,
+    category: p.category,
+    unit_price: p.unit_price,
+    sku: p.sku || '',
+    description: p.description || '',
+    is_active: p.is_active
+  }
+  showModal.value = true
+}
+
+function deleteProduct(p) {
+  deleteItem.value = p
+  showDeleteConfirm.value = true
+}
+
+async function confirmDelete() {
+  if (!deleteItem.value) return
+  deleting.value = true
+  try {
+    const { error } = await supabase.from('products').delete().eq('id', deleteItem.value.id)
+    if (error) throw error
+    showDeleteConfirm.value = false
+    deleteItem.value = null
+    await load()
+  } catch (err) {
+    console.error('Delete error:', err.message)
+  } finally {
+    deleting.value = false
+  }
+}
+
 async function toggleProduct(p) {
   await supabase.from('products').update({ is_active: !p.is_active }).eq('id', p.id)
   p.is_active = !p.is_active
 }
 
 function closeModal() {
-  showModal.value = false; formError.value = ''
-  form.value = { name: '', category: '', unit_price: '', sku: '', description: '' }
+  showModal.value = false
+  editingId.value = null
+  formError.value = ''
+  form.value = { name: '', category: '', unit_price: '', sku: '', description: '', is_active: true }
 }
 
 onMounted(load)

@@ -23,8 +23,11 @@
         <p class="text-sm text-gray-500 mt-1">{{ branch.suburb }}</p>
         <p class="text-xs text-gray-400 mt-1">{{ branch.address }}</p>
         <p v-if="branch.phone" class="text-xs text-gray-400 mt-1">{{ branch.phone }}</p>
-        <div class="mt-4 pt-4 border-t border-gray-100 flex gap-3">
-          <button @click="toggleBranch(branch)" class="text-xs text-gray-500 hover:text-nibbles-red transition-colors">
+        <div class="mt-4 pt-4 border-t border-gray-100 flex gap-2">
+          <button @click="editBranch(branch)" class="flex-1 text-xs text-nibbles-red hover:bg-red-50 py-1.5 rounded transition-colors font-medium">
+            Edit
+          </button>
+          <button @click="toggleBranch(branch)" class="flex-1 text-xs text-gray-500 hover:bg-gray-50 py-1.5 rounded transition-colors">
             {{ branch.is_active ? 'Deactivate' : 'Activate' }}
           </button>
         </div>
@@ -33,8 +36,8 @@
 
     <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div class="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h2 class="text-lg font-bold text-nibbles-dark mb-4">Add Branch</h2>
-        <form @submit.prevent="createBranch" class="space-y-4">
+        <h2 class="text-lg font-bold text-nibbles-dark mb-4">{{ editingId ? 'Edit Branch' : 'Add Branch' }}</h2>
+        <form @submit.prevent="saveBranch" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Branch name</label>
             <input v-model="form.name" type="text" required placeholder="e.g. Gateway Umhlanga" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
@@ -55,7 +58,7 @@
           <div class="flex gap-3 pt-2">
             <button type="button" @click="closeModal" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
             <button type="submit" :disabled="saving" class="flex-1 bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-nibbles-red-dark disabled:opacity-60">
-              {{ saving ? 'Saving...' : 'Add Branch' }}
+              {{ saving ? 'Saving...' : (editingId ? 'Update Branch' : 'Add Branch') }}
             </button>
           </div>
         </form>
@@ -72,6 +75,7 @@ const branches = ref([])
 const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
+const editingId = ref(null)
 const form = ref({ name: '', suburb: '', address: '', phone: '' })
 
 async function load() {
@@ -79,11 +83,22 @@ async function load() {
   if (data) branches.value = data
 }
 
-async function createBranch() {
+async function saveBranch() {
   saving.value = true; formError.value = ''
-  const { error } = await supabase.from('branches').insert({ ...form.value })
-  if (error) { formError.value = error.message } else { closeModal(); await load() }
+  if (editingId.value) {
+    const { error } = await supabase.from('branches').update({ ...form.value }).eq('id', editingId.value)
+    if (error) { formError.value = error.message } else { closeModal(); await load() }
+  } else {
+    const { error } = await supabase.from('branches').insert({ ...form.value })
+    if (error) { formError.value = error.message } else { closeModal(); await load() }
+  }
   saving.value = false
+}
+
+function editBranch(branch) {
+  editingId.value = branch.id
+  form.value = { name: branch.name, suburb: branch.suburb, address: branch.address, phone: branch.phone }
+  showModal.value = true
 }
 
 async function toggleBranch(branch) {
@@ -92,7 +107,7 @@ async function toggleBranch(branch) {
 }
 
 function closeModal() {
-  showModal.value = false; formError.value = ''
+  showModal.value = false; formError.value = ''; editingId.value = null
   form.value = { name: '', suburb: '', address: '', phone: '' }
 }
 

@@ -133,7 +133,7 @@ async function runAI() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
+        model: 'llama-3.3-70b-versatile',
         messages: [{
           role: 'user',
           content: `You are a business analyst for Nibbles Bakery, a multi-branch bakery in Durban, South Africa.

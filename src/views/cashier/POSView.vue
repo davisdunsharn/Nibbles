@@ -75,11 +75,12 @@
       <div class="p-4 border-t border-gray-200 space-y-3">
         <div class="space-y-1 text-sm">
           <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>R{{ subtotal.toFixed(2) }}</span></div>
-          <div class="flex justify-between font-bold text-nibbles-dark text-base"><span>Total</span><span>R{{ subtotal.toFixed(2) }}</span></div>
+          <div class="flex justify-between text-gray-500"><span>Tax ({{ taxRate }}%)</span><span>R{{ taxAmount.toFixed(2) }}</span></div>
+          <div class="flex justify-between font-bold text-nibbles-dark text-base"><span>Total</span><span>R{{ total.toFixed(2) }}</span></div>
         </div>
         <button @click="showPayment = true" :disabled="cart.length === 0"
           class="w-full bg-nibbles-red text-white py-3 rounded-xl font-semibold hover:bg-nibbles-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-          Charge R{{ subtotal.toFixed(2) }}
+          Charge R{{ total.toFixed(2) }}
         </button>
       </div>
     </div>
@@ -88,7 +89,8 @@
     <div v-if="showPayment" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
         <h2 class="text-lg font-bold text-nibbles-dark mb-1">Payment</h2>
-        <p class="text-2xl font-bold text-nibbles-red mb-4">R{{ subtotal.toFixed(2) }}</p>
+        <p class="text-xl font-bold text-nibbles-red mb-1">R{{ total.toFixed(2) }}</p>
+        <p class="text-xs text-gray-500 mb-4">(Includes tax: R{{ taxAmount.toFixed(2) }})</p>
 
         <div class="flex gap-2 mb-4">
           <button v-for="method in ['cash','card','split']" :key="method"
@@ -101,10 +103,10 @@
 
         <div v-if="paymentMethod === 'cash'" class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-1">Cash tendered</label>
-          <input v-model.number="cashTendered" type="number" step="0.01" :min="subtotal"
+          <input v-model.number="cashTendered" type="number" step="0.01" :min="total"
             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
-          <p v-if="cashTendered >= subtotal" class="text-sm text-green-600 mt-2 font-medium">
-            Change: R{{ (cashTendered - subtotal).toFixed(2) }}
+          <p v-if="cashTendered >= total" class="text-sm text-green-600 mt-2 font-medium">
+            Change: R{{ (cashTendered - total).toFixed(2) }}
           </p>
         </div>
 
@@ -118,7 +120,7 @@
 
         <div class="flex gap-3">
           <button @click="showPayment = false" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-          <button @click="processPayment" :disabled="paying || (paymentMethod === 'cash' && cashTendered < subtotal)"
+          <button @click="processPayment" :disabled="paying || (paymentMethod === 'cash' && cashTendered < total)"
             class="flex-1 bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-nibbles-red-dark disabled:opacity-50 transition-colors">
             {{ paying ? 'Processing...' : 'Confirm' }}
           </button>
@@ -128,19 +130,45 @@
 
     <!-- Receipt modal -->
     <div v-if="showReceipt" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center">
-        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span class="text-3xl">✓</span>
+      <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
+        <div ref="receiptPrint" class="text-center mb-6">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-3xl">✓</span>
+          </div>
+          <h2 class="text-lg font-bold text-nibbles-dark mb-1">Payment Complete</h2>
+          <p class="font-mono text-sm text-gray-500 mb-2">{{ lastReceipt }}</p>
+          
+          <!-- Receipt Details for Printing -->
+          <div class="border-t border-b border-gray-200 py-4 my-4 text-xs text-left space-y-2">
+            <div class="text-center font-bold mb-3">NIBBLES BAKERY</div>
+            <div class="flex justify-between"><span>Date & Time:</span><span>{{ lastDateTime }}</span></div>
+            <div class="flex justify-between"><span>Cashier:</span><span>{{ lastCashier }}</span></div>
+            <div class="flex justify-between"><span>Receipt #:</span><span class="font-mono font-bold">{{ lastReceipt }}</span></div>
+            <div class="border-t border-gray-200 pt-2 mt-2"></div>
+            <div v-for="item in lastItems" :key="item.product_id" class="flex justify-between">
+              <span class="flex-1 truncate">{{ item.name }} x{{ item.quantity }}</span>
+              <span class="font-mono ml-2">R{{ (item.quantity * item.unit_price).toFixed(2) }}</span>
+            </div>
+            <div class="border-t border-gray-200 pt-2 mt-2 space-y-1">
+              <div class="flex justify-between"><span>Subtotal:</span><span class="font-mono">R{{ lastSubtotal }}</span></div>
+              <div class="flex justify-between"><span>Tax (15%):</span><span class="font-mono">R{{ lastTax }}</span></div>
+              <div class="flex justify-between font-bold text-base"><span>TOTAL:</span><span class="font-mono">R{{ lastTotal }}</span></div>
+              <div v-if="lastChange > 0" class="flex justify-between text-green-600"><span>Change:</span><span class="font-mono">R{{ lastChange.toFixed(2) }}</span></div>
+            </div>
+            <div class="text-center text-xs text-gray-400 mt-3 pt-2 border-t border-gray-200">
+              Thank you for your purchase!
+            </div>
+          </div>
         </div>
-        <h2 class="text-lg font-bold text-nibbles-dark mb-1">Payment Complete</h2>
-        <p class="font-mono text-sm text-gray-500 mb-1">{{ lastReceipt }}</p>
-        <p class="text-2xl font-bold text-nibbles-red mb-4">R{{ lastTotal }}</p>
-        <div v-if="lastChange > 0" class="mb-4 p-3 bg-gray-50 rounded-lg">
-          <p class="text-sm text-gray-600">Change due: <span class="font-bold text-nibbles-dark">R{{ lastChange.toFixed(2) }}</span></p>
+
+        <div class="flex gap-3">
+          <button @click="printReceipt" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-600 transition-colors">
+            🖨️ Print
+          </button>
+          <button @click="newOrder" class="flex-1 bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-nibbles-red-dark transition-colors">
+            New Order
+          </button>
         </div>
-        <button @click="newOrder" class="w-full bg-nibbles-red text-white py-3 rounded-xl font-semibold hover:bg-nibbles-red-dark transition-colors">
-          New Order
-        </button>
       </div>
     </div>
   </div>
@@ -169,7 +197,14 @@ const phoneSearch = ref('')
 const customerResult = ref(null)
 const lastReceipt = ref('')
 const lastTotal = ref('')
+const lastSubtotal = ref('')
+const lastTax = ref('')
 const lastChange = ref(0)
+const lastDateTime = ref('')
+const lastCashier = ref('')
+const lastItems = ref([])
+const receiptPrint = ref(null)
+const taxRate = ref(15) // 15% VAT
 
 const categories = computed(() => ['all', ...new Set(products.value.map(p => p.category))])
 
@@ -182,6 +217,10 @@ const filteredProducts = computed(() => {
 })
 
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.unit_price * i.quantity, 0))
+
+const taxAmount = computed(() => subtotal.value * (taxRate.value / 100))
+
+const total = computed(() => subtotal.value + taxAmount.value)
 
 function categoryIcon(cat) {
   return { bread: '🍞', roll: '🥐', pastry: '🥐', cake: '🎂', beverage: '☕', other: '🛍️' }[cat] || '🛍️'
@@ -220,17 +259,20 @@ async function processPayment() {
   payError.value = ''
   try {
     const receiptNumber = await generateReceiptNumber()
-    const total = subtotal.value
-    const change = paymentMethod.value === 'cash' ? cashTendered.value - total : 0
+    const sub = subtotal.value
+    const tax = taxAmount.value
+    const tot = total.value
+    const change = paymentMethod.value === 'cash' ? cashTendered.value - tot : 0
 
     const { data: tx, error: txError } = await supabase.from('transactions').insert({
       branch_id: auth.branchId,
       cashier_id: auth.user.id,
       customer_id: customerResult.value?.id || null,
       receipt_number: receiptNumber,
-      subtotal: total,
+      subtotal: sub,
+      tax_amount: tax,
       discount_amount: 0,
-      total_amount: total,
+      total_amount: tot,
       payment_method: paymentMethod.value,
       cash_tendered: paymentMethod.value === 'cash' ? cashTendered.value : null,
       change_given: change > 0 ? change : null,
@@ -252,9 +294,29 @@ async function processPayment() {
     const { error: linesError } = await supabase.from('transaction_lines').insert(lines)
     if (linesError) throw linesError
 
+    // Update inventory - deduct stock for each item sold
+    for (const item of cart.value) {
+      const { error: invError } = await supabase.rpc('deduct_inventory', {
+        p_product_id: item.id,
+        p_branch_id: auth.branchId,
+        p_quantity: item.quantity
+      })
+      if (invError) console.error('Inventory sync error:', invError)
+    }
+
     lastReceipt.value = receiptNumber
-    lastTotal.value = total.toFixed(2)
+    lastSubtotal.value = sub.toFixed(2)
+    lastTax.value = tax.toFixed(2)
+    lastTotal.value = tot.toFixed(2)
     lastChange.value = change
+    lastDateTime.value = new Date().toLocaleString('en-ZA')
+    lastCashier.value = `${auth.user.user_metadata?.first_name || 'Cashier'}`
+    lastItems.value = cart.value.map(item => ({
+      product_id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      unit_price: item.unit_price
+    }))
     showPayment.value = false
     showReceipt.value = true
   } catch (err) {
@@ -270,6 +332,14 @@ function newOrder() {
   paymentMethod.value = 'cash'
   cashTendered.value = 0
   cardReference.value = ''
+}
+
+function printReceipt() {
+  const printContent = receiptPrint.value?.innerHTML
+  const originalContent = document.body.innerHTML
+  document.body.innerHTML = printContent
+  window.print()
+  document.body.innerHTML = originalContent
 }
 
 onMounted(async () => {
