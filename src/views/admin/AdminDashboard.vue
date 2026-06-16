@@ -1,62 +1,74 @@
 <template>
-  <div class="p-6">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-nibbles-dark">Dashboard</h1>
-      <p class="text-gray-500 text-sm mt-1">Overview across all Nibbles branches</p>
+  <div class="p-8">
+    <div class="mb-7">
+      <h1 class="font-display text-3xl font-semibold text-ink tracking-tight">Dashboard</h1>
+      <p class="text-ink-muted text-sm mt-1">Overview across all Nibbles branches</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div v-for="stat in stats" :key="stat.label" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-2xl">{{ stat.icon }}</span>
-          <span :class="stat.change >= 0 ? 'text-green-600' : 'text-red-600'" class="text-xs font-medium">
-            {{ stat.change >= 0 ? '+' : '' }}{{ stat.change }}%
+      <div v-for="stat in stats" :key="stat.label" class="card card-hover p-5">
+        <div class="flex items-center justify-between mb-4">
+          <span class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
+            <AppIcon :name="stat.icon" :size="20" />
+          </span>
+          <span
+            :class="stat.change >= 0 ? 'text-emerald-600' : 'text-red-600'"
+            class="inline-flex items-center gap-0.5 text-xs font-medium"
+          >
+            <AppIcon :name="stat.change >= 0 ? 'arrow-up' : 'arrow-down'" :size="12" :stroke-width="2.25" />
+            {{ Math.abs(stat.change) }}%
           </span>
         </div>
-        <p class="text-2xl font-bold text-nibbles-dark">{{ stat.value }}</p>
-        <p class="text-gray-500 text-sm mt-1">{{ stat.label }}</p>
+        <p class="text-2xl font-semibold text-ink tracking-tight">{{ stat.value }}</p>
+        <p class="text-ink-muted text-sm mt-1">{{ stat.label }}</p>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <h3 class="font-semibold text-nibbles-dark mb-4">Branch Performance Today</h3>
-        <div class="space-y-3">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+      <div class="card p-6">
+        <h3 class="font-semibold text-ink mb-5">Branch Performance Today</h3>
+        <div class="space-y-4">
           <div v-for="branch in branches" :key="branch.name" class="flex items-center gap-3">
             <div class="flex-1">
-              <div class="flex justify-between text-sm mb-1">
-                <span class="font-medium text-gray-700">{{ branch.name }}</span>
-                <span class="text-gray-500">R{{ branch.revenue.toLocaleString() }}</span>
+              <div class="flex justify-between text-sm mb-1.5">
+                <span class="font-medium text-ink-soft">{{ branch.name }}</span>
+                <span class="text-ink-muted tabular-nums">R{{ branch.revenue.toLocaleString() }}</span>
               </div>
-              <div class="w-full bg-gray-100 rounded-full h-2">
-                <div class="bg-nibbles-red h-2 rounded-full transition-all" :style="{ width: branch.pct + '%' }"></div>
+              <div class="w-full bg-stone-100 rounded-full h-2">
+                <div class="bg-brand-600 h-2 rounded-full transition-all" :style="{ width: branch.pct + '%' }"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <h3 class="font-semibold text-nibbles-dark mb-4">Low Stock Alerts</h3>
-        <div v-if="lowStock.length === 0" class="text-gray-400 text-sm">No alerts — all stock levels healthy.</div>
+      <div class="card p-6">
+        <h3 class="font-semibold text-ink mb-5">Low Stock Alerts</h3>
+        <div v-if="lowStock.length === 0" class="flex items-center gap-2 text-ink-muted text-sm py-2">
+          <AppIcon name="check-circle" :size="16" class="text-emerald-500" />
+          No alerts — all stock levels healthy.
+        </div>
         <div v-else class="space-y-2">
-          <div v-for="item in lowStock" :key="item.id" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-            <div>
-              <p class="text-sm font-medium text-gray-800">{{ item.product }}</p>
-              <p class="text-xs text-gray-500">{{ item.branch }}</p>
+          <div v-for="item in lowStock" :key="item.id" class="flex items-center justify-between p-3 bg-amber-50/70 border border-amber-100 rounded-xl">
+            <div class="flex items-center gap-2.5">
+              <AppIcon name="alert" :size="16" class="text-amber-500 flex-shrink-0" />
+              <div>
+                <p class="text-sm font-medium text-ink">{{ item.product }}</p>
+                <p class="text-xs text-ink-muted">{{ item.branch }}</p>
+              </div>
             </div>
-            <span class="text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded">{{ item.qty }} left</span>
+            <span class="badge-warning">{{ item.qty }} left</span>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-      <h3 class="font-semibold text-nibbles-dark mb-4">Recent Transactions</h3>
+    <div class="card p-6">
+      <h3 class="font-semibold text-ink mb-5">Recent Transactions</h3>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="text-left text-gray-400 border-b border-gray-100">
+            <tr class="text-left text-ink-muted border-b border-stone-100">
               <th class="pb-3 font-medium">Receipt</th>
               <th class="pb-3 font-medium">Branch</th>
               <th class="pb-3 font-medium">Amount</th>
@@ -65,16 +77,15 @@
               <th class="pb-3 font-medium">Status</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50">
-              <td class="py-3 font-mono text-xs text-gray-600">{{ tx.receipt }}</td>
-              <td class="py-3 text-gray-700">{{ tx.branch }}</td>
-              <td class="py-3 font-semibold text-nibbles-dark">R{{ tx.amount }}</td>
-              <td class="py-3 capitalize text-gray-600">{{ tx.payment }}</td>
-              <td class="py-3 text-gray-400">{{ tx.time }}</td>
+          <tbody class="divide-y divide-stone-50">
+            <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-stone-50/70">
+              <td class="py-3 font-mono text-xs text-ink-muted">{{ tx.receipt }}</td>
+              <td class="py-3 text-ink-soft">{{ tx.branch }}</td>
+              <td class="py-3 font-semibold text-ink tabular-nums">R{{ tx.amount }}</td>
+              <td class="py-3 capitalize text-ink-soft">{{ tx.payment }}</td>
+              <td class="py-3 text-ink-muted">{{ tx.time }}</td>
               <td class="py-3">
-                <span :class="tx.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-                  class="px-2 py-0.5 rounded text-xs font-medium capitalize">{{ tx.status }}</span>
+                <span :class="tx.status === 'completed' ? 'badge-success' : 'badge-danger'" class="capitalize">{{ tx.status }}</span>
               </td>
             </tr>
           </tbody>
@@ -87,12 +98,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '../../lib/supabase'
+import AppIcon from '../../components/AppIcon.vue'
 
 const stats = ref([
-  { label: "Today's Revenue", value: 'R0', icon: '💰', change: 0 },
-  { label: 'Transactions', value: '0', icon: '🧾', change: 0 },
-  { label: 'Active Staff', value: '0', icon: '👤', change: 0 },
-  { label: 'Loyalty Members', value: '0', icon: '❤️', change: 0 },
+  { label: "Today's Revenue", value: 'R0', icon: 'banknote', change: 0 },
+  { label: 'Transactions', value: '0', icon: 'receipt', change: 0 },
+  { label: 'Active Staff', value: '0', icon: 'users', change: 0 },
+  { label: 'Loyalty Members', value: '0', icon: 'heart', change: 0 },
 ])
 const branches = ref([])
 const lowStock = ref([])

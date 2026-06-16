@@ -23,12 +23,12 @@
         <div v-else class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
           <button v-for="product in filteredProducts" :key="product.id"
             @click="addToCart(product)"
-            class="bg-white border border-gray-200 rounded-xl p-4 text-left hover:border-nibbles-red hover:shadow-md transition-all group">
-            <div class="w-10 h-10 bg-nibbles-cream rounded-lg flex items-center justify-center mb-3 group-hover:bg-red-50">
-              <span class="text-xl">{{ categoryIcon(product.category) }}</span>
+            class="bg-white border border-stone-200 rounded-xl p-4 text-left hover:border-brand-400 hover:shadow-card-hover transition-all group">
+            <div class="w-10 h-10 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center mb-3 transition-colors group-hover:bg-brand-100">
+              <AppIcon :name="categoryIcon(product.category)" :size="20" />
             </div>
-            <p class="text-sm font-semibold text-gray-800 leading-tight mb-1">{{ product.name }}</p>
-            <p class="text-nibbles-red font-bold text-sm">R{{ parseFloat(product.unit_price).toFixed(2) }}</p>
+            <p class="text-sm font-semibold text-ink leading-tight mb-1">{{ product.name }}</p>
+            <p class="text-brand-600 font-semibold text-sm tabular-nums">R{{ parseFloat(product.unit_price).toFixed(2) }}</p>
           </button>
         </div>
       </div>
@@ -63,11 +63,17 @@
             <p class="text-xs text-nibbles-red font-semibold">R{{ (item.unit_price * item.quantity).toFixed(2) }}</p>
           </div>
           <div class="flex items-center gap-1">
-            <button @click="changeQty(i, -1)" class="w-6 h-6 rounded bg-gray-200 hover:bg-gray-300 text-gray-600 text-sm font-bold flex items-center justify-center">−</button>
-            <span class="text-sm font-medium w-6 text-center">{{ item.quantity }}</span>
-            <button @click="changeQty(i, 1)" class="w-6 h-6 rounded bg-gray-200 hover:bg-gray-300 text-gray-600 text-sm font-bold flex items-center justify-center">+</button>
+            <button @click="changeQty(i, -1)" class="w-6 h-6 rounded-lg bg-stone-200 hover:bg-stone-300 text-ink-soft flex items-center justify-center transition-colors">
+              <AppIcon name="minus" :size="14" :stroke-width="2.25" />
+            </button>
+            <span class="text-sm font-medium w-6 text-center tabular-nums">{{ item.quantity }}</span>
+            <button @click="changeQty(i, 1)" class="w-6 h-6 rounded-lg bg-stone-200 hover:bg-stone-300 text-ink-soft flex items-center justify-center transition-colors">
+              <AppIcon name="plus" :size="14" :stroke-width="2.25" />
+            </button>
           </div>
-          <button @click="removeItem(i)" class="text-gray-300 hover:text-red-500 text-sm transition-colors">✕</button>
+          <button @click="removeItem(i)" class="text-stone-300 hover:text-red-500 transition-colors">
+            <AppIcon name="x" :size="16" />
+          </button>
         </div>
       </div>
 
@@ -132,8 +138,8 @@
     <div v-if="showReceipt" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
         <div ref="receiptPrint" class="text-center mb-6">
-          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-3xl">✓</span>
+          <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AppIcon name="check" :size="30" :stroke-width="2.5" />
           </div>
           <h2 class="text-lg font-bold text-nibbles-dark mb-1">Payment Complete</h2>
           <p class="font-mono text-sm text-gray-500 mb-2">{{ lastReceipt }}</p>
@@ -162,8 +168,8 @@
         </div>
 
         <div class="flex gap-3">
-          <button @click="printReceipt" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-600 transition-colors">
-            🖨️ Print
+          <button @click="printReceipt" class="btn-secondary flex-1">
+            <AppIcon name="printer" :size="16" /> Print
           </button>
           <button @click="newOrder" class="flex-1 bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-nibbles-red-dark transition-colors">
             New Order
@@ -179,6 +185,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { supabase } from '../../lib/supabase'
 import { useDebounceFn } from '@vueuse/core'
+import AppIcon from '../../components/AppIcon.vue'
+import { useToast } from '../../composables/useToast'
+
+const toast = useToast()
 
 const auth = useAuthStore()
 const products = ref([])
@@ -223,7 +233,7 @@ const taxAmount = computed(() => subtotal.value * (taxRate.value / 100))
 const total = computed(() => subtotal.value + taxAmount.value)
 
 function categoryIcon(cat) {
-  return { bread: '🍞', roll: '🥐', pastry: '🥐', cake: '🎂', beverage: '☕', other: '🛍️' }[cat] || '🛍️'
+  return { bread: 'package', roll: 'croissant', pastry: 'croissant', cake: 'cake', beverage: 'coffee', other: 'bag' }[cat] || 'bag'
 }
 
 function addToCart(product) {
@@ -319,8 +329,10 @@ async function processPayment() {
     }))
     showPayment.value = false
     showReceipt.value = true
+    toast.success(`Sale complete · R${tot.toFixed(2)} (${paymentMethod.value})`)
   } catch (err) {
     payError.value = err.message
+    toast.error(`Payment failed: ${err.message}`)
   } finally {
     paying.value = false
   }
@@ -335,11 +347,14 @@ function newOrder() {
 }
 
 function printReceipt() {
-  const printContent = receiptPrint.value?.innerHTML
-  const originalContent = document.body.innerHTML
-  document.body.innerHTML = printContent
-  window.print()
-  document.body.innerHTML = originalContent
+  const html = receiptPrint.value?.innerHTML
+  if (!html) return
+  const w = window.open('', 'receipt', 'width=380,height=600')
+  if (!w) { toast.error('Allow pop-ups to print the receipt.'); return }
+  w.document.write(`<!doctype html><html><head><title>Receipt ${lastReceipt.value}</title>
+    <style>body{font-family:'Inter',system-ui,sans-serif;color:#1c1917;padding:16px;-webkit-print-color-adjust:exact}</style>
+    </head><body>${html}<script>window.onload=function(){window.print();setTimeout(function(){window.close()},300)}<\/script></body></html>`)
+  w.document.close()
 }
 
 onMounted(async () => {

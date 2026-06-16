@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/auth'
 
 const routes = [
   { path: '/login', name: 'login', component: () => import('../views/auth/LoginView.vue'), meta: { requiresGuest: true } },
+  { path: '/reset-password', name: 'reset-password', component: () => import('../views/auth/ResetPasswordView.vue') },
   {
     path: '/admin',
     component: () => import('../layouts/AdminLayout.vue'),
@@ -30,7 +31,6 @@ const routes = [
       { path: 'orders', name: 'manager-orders', component: () => import('../views/manager/OrdersView.vue') },
       { path: 'shifts', name: 'manager-shifts', component: () => import('../views/manager/ShiftsView.vue') },
       { path: 'sales', name: 'manager-sales', component: () => import('../views/manager/SalesView.vue') },
-      { path: 'customers', name: 'manager-customers', component: () => import('../views/manager/CustomersView.vue') },
     ]
   },
   {
@@ -52,7 +52,11 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore()
   if (auth.loading) {
     await new Promise(resolve => {
-      const interval = setInterval(() => { if (!auth.loading) { clearInterval(interval); resolve() } }, 50)
+      let waited = 0
+      const interval = setInterval(() => {
+        waited += 50
+        if (!auth.loading || waited >= 4000) { clearInterval(interval); resolve() }
+      }, 50)
     })
   }
   const isLoggedIn = !!auth.user

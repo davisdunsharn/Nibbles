@@ -11,4 +11,6 @@ app.use(pinia)
 app.use(router)
 
 const auth = useAuthStore()
-auth.init().then(() => { app.mount('#app') })
+// Always mount, even if startup auth fails — the app falls back to /login
+// rather than showing a blank screen on a fresh device.
+auth.init().finally(() => { app.mount('#app') })

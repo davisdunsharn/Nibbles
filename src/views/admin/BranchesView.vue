@@ -1,33 +1,33 @@
 <template>
-  <div class="p-6">
+  <div class="p-8">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-nibbles-dark">Branches</h1>
-        <p class="text-gray-500 text-sm mt-1">Manage Nibbles bakery locations</p>
+        <h1 class="font-display text-3xl font-semibold text-ink tracking-tight">Branches</h1>
+        <p class="text-ink-muted text-sm mt-1">Manage Nibbles bakery locations</p>
       </div>
-      <button @click="showModal = true" class="bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-nibbles-red-dark transition-colors">
-        + Add Branch
+      <button @click="showModal = true" class="btn-primary">
+        <AppIcon name="plus" :size="16" :stroke-width="2.25" /> Add Branch
       </button>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      <div v-for="branch in branches" :key="branch.id" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+      <div v-for="branch in branches" :key="branch.id" class="card card-hover p-5">
         <div class="flex items-start justify-between mb-3">
-          <div class="w-10 h-10 bg-nibbles-cream rounded-lg flex items-center justify-center">
-            <span class="text-xl">🏪</span>
+          <div class="w-10 h-10 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center">
+            <AppIcon name="store" :size="20" />
           </div>
-          <span :class="branch.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'" class="text-xs font-medium px-2 py-0.5 rounded">
+          <span :class="branch.is_active ? 'badge-success' : 'badge-neutral'">
             {{ branch.is_active ? 'Active' : 'Inactive' }}
           </span>
         </div>
-        <h3 class="font-semibold text-nibbles-dark">{{ branch.name }}</h3>
-        <p class="text-sm text-gray-500 mt-1">{{ branch.suburb }}</p>
-        <p class="text-xs text-gray-400 mt-1">{{ branch.address }}</p>
-        <p v-if="branch.phone" class="text-xs text-gray-400 mt-1">{{ branch.phone }}</p>
-        <div class="mt-4 pt-4 border-t border-gray-100 flex gap-2">
-          <button @click="editBranch(branch)" class="flex-1 text-xs text-nibbles-red hover:bg-red-50 py-1.5 rounded transition-colors font-medium">
+        <h3 class="font-semibold text-ink">{{ branch.name }}</h3>
+        <p class="text-sm text-ink-soft mt-1">{{ branch.suburb }}</p>
+        <p class="text-xs text-ink-muted mt-1">{{ branch.address }}</p>
+        <p v-if="branch.phone" class="text-xs text-ink-muted mt-1">{{ branch.phone }}</p>
+        <div class="mt-4 pt-4 border-t border-stone-100 flex gap-2">
+          <button @click="editBranch(branch)" class="flex-1 text-xs text-brand-600 hover:bg-brand-50 py-1.5 rounded-lg transition-colors font-medium">
             Edit
           </button>
-          <button @click="toggleBranch(branch)" class="flex-1 text-xs text-gray-500 hover:bg-gray-50 py-1.5 rounded transition-colors">
+          <button @click="toggleBranch(branch)" class="flex-1 text-xs text-ink-muted hover:bg-stone-50 py-1.5 rounded-lg transition-colors">
             {{ branch.is_active ? 'Deactivate' : 'Activate' }}
           </button>
         </div>
@@ -70,7 +70,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '../../lib/supabase'
+import { useToast } from '../../composables/useToast'
+import AppIcon from '../../components/AppIcon.vue'
 
+const toast = useToast()
 const branches = ref([])
 const showModal = ref(false)
 const saving = ref(false)
@@ -87,10 +90,10 @@ async function saveBranch() {
   saving.value = true; formError.value = ''
   if (editingId.value) {
     const { error } = await supabase.from('branches').update({ ...form.value }).eq('id', editingId.value)
-    if (error) { formError.value = error.message } else { closeModal(); await load() }
+    if (error) { formError.value = error.message; toast.error(error.message) } else { closeModal(); await load(); toast.success('Branch updated') }
   } else {
     const { error } = await supabase.from('branches').insert({ ...form.value })
-    if (error) { formError.value = error.message } else { closeModal(); await load() }
+    if (error) { formError.value = error.message; toast.error(error.message) } else { closeModal(); await load(); toast.success('Branch added') }
   }
   saving.value = false
 }
@@ -102,8 +105,10 @@ function editBranch(branch) {
 }
 
 async function toggleBranch(branch) {
-  await supabase.from('branches').update({ is_active: !branch.is_active }).eq('id', branch.id)
+  const { error } = await supabase.from('branches').update({ is_active: !branch.is_active }).eq('id', branch.id)
+  if (error) { toast.error(error.message); return }
   branch.is_active = !branch.is_active
+  toast.success(branch.is_active ? 'Branch activated' : 'Branch deactivated')
 }
 
 function closeModal() {

@@ -79,11 +79,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '../../lib/supabase'
+import { useToast } from '../../composables/useToast'
+const toast = useToast()
 const suppliers = ref([]); const loading = ref(true); const showModal = ref(false)
 const saving = ref(false); const formError = ref('')
 const form = ref({ name: '', contact_person: '', phone: '', email: '', payment_terms: '' })
 async function load() { loading.value = true; const { data } = await supabase.from('suppliers').select('*').order('name'); if (data) suppliers.value = data; loading.value = false }
-async function createSupplier() { saving.value = true; formError.value = ''; const { error } = await supabase.from('suppliers').insert({ ...form.value }); if (error) { formError.value = error.message } else { closeModal(); await load() }; saving.value = false }
+async function createSupplier() { saving.value = true; formError.value = ''; const { error } = await supabase.from('suppliers').insert({ ...form.value }); if (error) { formError.value = error.message; toast.error(error.message) } else { closeModal(); await load(); toast.success('Supplier added') }; saving.value = false }
 function closeModal() { showModal.value = false; formError.value = ''; form.value = { name: '', contact_person: '', phone: '', email: '', payment_terms: '' } }
 onMounted(load)
 </script>

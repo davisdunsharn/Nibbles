@@ -1,12 +1,13 @@
 <template>
-  <div class="p-6">
+  <div class="p-8">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-nibbles-dark">Users</h1>
-        <p class="text-gray-500 text-sm mt-1">Manage staff accounts across all branches</p>
+        <h1 class="font-display text-3xl font-semibold text-ink tracking-tight">Users</h1>
+        <p class="text-ink-muted text-sm mt-1">Manage staff accounts across all branches</p>
       </div>
-      <button @click="showModal = true" class="bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-nibbles-red-dark transition-colors">
-        + Add User
+      <button @click="showModal = true" class="btn-primary">
+        <AppIcon name="plus" :size="16" :stroke-width="2.25" />
+        Add User
       </button>
     </div>
 
@@ -87,7 +88,7 @@
           </div>
           <div v-if="!editingId">
             <label class="block text-sm font-medium text-gray-700 mb-1">Temporary password</label>
-            <input v-model="form.password" type="password" required minlength="8" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
+            <PasswordInput v-model="form.password" required minlength="8" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -136,48 +137,17 @@
         </div>
       </div>
     </div>
-            </div>
-          </div>
-          <div v-if="!editingId">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email address</label>
-            <input v-model="form.email" type="email" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
-          </div>
-          <div v-if="!editingId">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Temporary password</label>
-            <input v-model="form.password" type="password" required minlength="8" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <select v-model="form.role" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
-              <option value="">Select role</option>
-              <option value="manager">Manager</option>
-              <option value="cashier">Cashier</option>
-            </select>
-          </div>
-          <div v-if="form.role !== 'admin'">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-            <select v-model="form.branch_id" :required="form.role !== ''" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
-              <option value="">Select branch</option>
-              <option v-for="b in branchList" :key="b.id" :value="b.id">{{ b.name }}</option>
-            </select>
-          </div>
-          <div v-if="formError" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">{{ formError }}</div>
-          <div class="flex gap-3 pt-2">
-            <button type="button" @click="closeModal" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
-            <button type="submit" :disabled="creating" class="flex-1 bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-nibbles-red-dark disabled:opacity-60">
-              {{ creating ? 'Creating...' : 'Create User' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../lib/supabase'
+import { useToast } from '../../composables/useToast'
+import AppIcon from '../../components/AppIcon.vue'
+import PasswordInput from '../../components/PasswordInput.vue'
 
+const toast = useToast()
 const users = ref([])
 const branchList = ref([])
 const loading = ref(true)
@@ -260,8 +230,10 @@ async function saveUser() {
     
     closeModal()
     await loadData()
+    toast.success(editingId.value ? 'User updated' : 'User created')
   } catch (err) {
     formError.value = err.message
+    toast.error(err.message)
   } finally {
     creating.value = false
   }
@@ -295,8 +267,9 @@ async function confirmDelete() {
     showDeleteConfirm.value = false
     deleteItem.value = null
     await loadData()
+    toast.success('User deleted')
   } catch (err) {
-    console.error('Delete error:', err.message)
+    toast.error(err.message)
   } finally {
     deleting.value = false
   }

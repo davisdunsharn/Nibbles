@@ -1,50 +1,54 @@
 <template>
-  <div class="p-6">
+  <div class="p-8">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-nibbles-dark">Products</h1>
-        <p class="text-gray-500 text-sm mt-1">Global product catalogue</p>
+        <h1 class="font-display text-3xl font-semibold text-ink tracking-tight">Products</h1>
+        <p class="text-ink-muted text-sm mt-1">Global product catalogue</p>
       </div>
-      <button @click="showModal = true" class="bg-nibbles-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-nibbles-red-dark transition-colors">
-        + Add Product
+      <button @click="showModal = true" class="btn-primary">
+        <AppIcon name="plus" :size="16" :stroke-width="2.25" /> Add Product
       </button>
     </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div class="p-4 border-b border-gray-100 flex gap-3">
-        <input v-model="search" type="text" placeholder="Search products..." class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red" />
-        <select v-model="filterCat" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-nibbles-red">
+    <div class="card overflow-hidden">
+      <div class="p-4 border-b border-stone-100 flex gap-3">
+        <input v-model="search" type="text" placeholder="Search products..." class="input flex-1" />
+        <select v-model="filterCat" class="input w-auto">
           <option value="">All categories</option>
           <option v-for="c in ['bread','roll','pastry','cake','beverage','other']" :key="c" :value="c" class="capitalize">{{ c }}</option>
         </select>
       </div>
       <table class="w-full text-sm">
         <thead>
-          <tr class="text-left text-gray-400 border-b border-gray-100 bg-gray-50">
-            <th class="px-4 py-3 font-medium cursor-pointer" @click="toggleSort('name')">Name {{ sortIcon('name') }}</th>
+          <tr class="text-left text-ink-muted border-b border-stone-100 bg-stone-50/60">
+            <th class="px-4 py-3 font-medium cursor-pointer select-none" @click="toggleSort('name')">
+              <span class="inline-flex items-center gap-1">Name <AppIcon :name="sortIcon('name')" :size="13" class="text-stone-400" /></span>
+            </th>
             <th class="px-4 py-3 font-medium">Category</th>
-            <th class="px-4 py-3 font-medium cursor-pointer" @click="toggleSort('unit_price')">Price {{ sortIcon('unit_price') }}</th>
+            <th class="px-4 py-3 font-medium cursor-pointer select-none" @click="toggleSort('unit_price')">
+              <span class="inline-flex items-center gap-1">Price <AppIcon :name="sortIcon('unit_price')" :size="13" class="text-stone-400" /></span>
+            </th>
             <th class="px-4 py-3 font-medium">SKU</th>
             <th class="px-4 py-3 font-medium">Status</th>
             <th class="px-4 py-3 font-medium">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50">
-          <tr v-if="loading"><td colspan="6" class="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
-          <tr v-else-if="filtered.length === 0"><td colspan="6" class="px-4 py-8 text-center text-gray-400">No products found.</td></tr>
-          <tr v-for="p in filtered" :key="p.id" class="hover:bg-gray-50">
-            <td class="px-4 py-3 font-medium text-gray-800">{{ p.name }}</td>
-            <td class="px-4 py-3 capitalize text-gray-500">{{ p.category }}</td>
-            <td class="px-4 py-3 font-semibold text-nibbles-dark">R{{ parseFloat(p.unit_price).toFixed(2) }}</td>
-            <td class="px-4 py-3 font-mono text-xs text-gray-400">{{ p.sku || '—' }}</td>
+        <tbody class="divide-y divide-stone-50">
+          <tr v-if="loading"><td colspan="6" class="px-4 py-8 text-center text-ink-muted">Loading…</td></tr>
+          <tr v-else-if="filtered.length === 0"><td colspan="6" class="px-4 py-8 text-center text-ink-muted">No products found.</td></tr>
+          <tr v-for="p in filtered" :key="p.id" class="hover:bg-stone-50/70">
+            <td class="px-4 py-3 font-medium text-ink">{{ p.name }}</td>
+            <td class="px-4 py-3 capitalize text-ink-soft">{{ p.category }}</td>
+            <td class="px-4 py-3 font-semibold text-ink tabular-nums">R{{ parseFloat(p.unit_price).toFixed(2) }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-ink-muted">{{ p.sku || '—' }}</td>
             <td class="px-4 py-3">
-              <span :class="p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'" class="px-2 py-0.5 rounded text-xs font-medium">
+              <span :class="p.is_active ? 'badge-success' : 'badge-neutral'">
                 {{ p.is_active ? 'Active' : 'Inactive' }}
               </span>
             </td>
             <td class="px-4 py-3">
-              <div class="flex gap-2">
-                <button @click="editProduct(p)" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">Edit</button>
-                <button @click="deleteProduct(p)" class="text-xs text-red-600 hover:text-red-800 font-semibold">Delete</button>
+              <div class="flex gap-3">
+                <button @click="editProduct(p)" class="text-xs text-brand-600 hover:text-brand-700 font-semibold">Edit</button>
+                <button @click="deleteProduct(p)" class="text-xs text-red-600 hover:text-red-700 font-semibold">Delete</button>
               </div>
             </td>
           </tr>
@@ -119,7 +123,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../lib/supabase'
+import { useToast } from '../../composables/useToast'
+import AppIcon from '../../components/AppIcon.vue'
 
+const toast = useToast()
 const products = ref([])
 const loading = ref(true)
 const search = ref('')
@@ -154,7 +161,7 @@ function toggleSort(col) {
   if (sortCol.value === col) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   else { sortCol.value = col; sortDir.value = 'asc' }
 }
-function sortIcon(col) { return sortCol.value === col ? (sortDir.value === 'asc' ? '↑' : '↓') : '↕' }
+function sortIcon(col) { return sortCol.value === col ? (sortDir.value === 'asc' ? 'chevron-up' : 'chevron-down') : 'arrow-up-down' }
 
 async function load() {
   loading.value = true
@@ -196,8 +203,10 @@ async function saveProduct() {
     }
     closeModal()
     await load()
+    toast.success(editingId.value ? 'Product updated' : 'Product added')
   } catch (err) {
     formError.value = err.message
+    toast.error(err.message)
   } finally {
     saving.value = false
   }
@@ -230,8 +239,9 @@ async function confirmDelete() {
     showDeleteConfirm.value = false
     deleteItem.value = null
     await load()
+    toast.success('Product deleted')
   } catch (err) {
-    console.error('Delete error:', err.message)
+    toast.error(err.message)
   } finally {
     deleting.value = false
   }

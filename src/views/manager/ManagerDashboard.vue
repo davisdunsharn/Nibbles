@@ -1,74 +1,73 @@
 <template>
-  <div class="h-full overflow-auto bg-gray-50 p-6">
+  <div class="h-full overflow-auto bg-transparent p-8">
     <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold text-nibbles-dark mb-2">Branch Dashboard</h1>
-      <p class="text-gray-600">{{ branchName }}</p>
-      <div class="mt-3 flex gap-2">
-        <button @click="timeframe = 'today'" :class="timeframe === 'today' ? 'bg-nibbles-red text-white' : 'bg-white text-gray-600 border border-gray-200'" class="px-3 py-1 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors">Today</button>
-        <button @click="timeframe = 'week'" :class="timeframe === 'week' ? 'bg-nibbles-red text-white' : 'bg-white text-gray-600 border border-gray-200'" class="px-3 py-1 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors">Week</button>
-        <button @click="timeframe = 'month'" :class="timeframe === 'month' ? 'bg-nibbles-red text-white' : 'bg-white text-gray-600 border border-gray-200'" class="px-3 py-1 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors">Month</button>
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="font-display text-3xl font-semibold text-ink tracking-tight">Branch Dashboard</h1>
+        <p class="text-ink-muted text-sm mt-1">{{ branchName }}</p>
+      </div>
+      <div class="inline-flex p-1 bg-stone-100 rounded-xl">
+        <button
+          v-for="opt in ['today', 'week', 'month']"
+          :key="opt"
+          @click="timeframe = opt"
+          :class="timeframe === opt ? 'bg-white text-ink shadow-card' : 'text-ink-muted hover:text-ink-soft'"
+          class="px-3.5 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors"
+        >{{ opt }}</button>
       </div>
     </div>
 
     <!-- Key Stats -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <span class="text-2xl">💰</span>
-        <p class="text-2xl font-bold text-nibbles-dark mt-2">{{ totalSales }}</p>
-        <p class="text-gray-500 text-sm mt-1">Total Sales</p>
-      </div>
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <span class="text-2xl">🧾</span>
-        <p class="text-2xl font-bold text-nibbles-dark mt-2">{{ totalTransactions }}</p>
-        <p class="text-gray-500 text-sm mt-1">Transactions</p>
-      </div>
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <span class="text-2xl">⚠️</span>
-        <p class="text-2xl font-bold text-red-600 mt-2">{{ lowStockCount }}</p>
-        <p class="text-gray-500 text-sm mt-1">Low Stock Items</p>
-      </div>
-      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <span class="text-2xl">🛍️</span>
-        <p class="text-2xl font-bold text-nibbles-dark mt-2">{{ totalItemsSold }}</p>
-        <p class="text-gray-500 text-sm mt-1">Items Sold</p>
+      <div v-for="stat in statCards" :key="stat.label" class="card card-hover p-5">
+        <span
+          class="w-10 h-10 rounded-xl flex items-center justify-center"
+          :class="stat.alert ? 'bg-amber-50 text-amber-600' : 'bg-brand-50 text-brand-600'"
+        >
+          <AppIcon :name="stat.icon" :size="20" />
+        </span>
+        <p class="text-2xl font-semibold mt-3 tracking-tight" :class="stat.alert && stat.value > 0 ? 'text-amber-600' : 'text-ink'">{{ stat.value }}</p>
+        <p class="text-ink-muted text-sm mt-1">{{ stat.label }}</p>
       </div>
     </div>
 
     <!-- Main Dashboard Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <!-- Left Column: Sales & Payment Methods -->
-      <div class="lg:col-span-2 space-y-6">
+      <div class="lg:col-span-2 space-y-5">
         <!-- Revenue Breakdown -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 class="font-semibold text-nibbles-dark mb-4 text-lg">Payment Methods</h3>
-          <div class="space-y-3">
+        <div class="card p-6">
+          <h3 class="font-semibold text-ink mb-5">Payment Methods</h3>
+          <div class="space-y-4">
             <div v-for="(amount, method) in paymentBreakdown" :key="method" class="flex items-center justify-between">
               <div class="flex-1">
-                <p class="text-sm font-medium text-gray-700 capitalize">{{ method }}</p>
-                <div class="mt-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div :style="{ width: maxPayment > 0 ? (amount / maxPayment * 100) + '%' : '0' }" 
+                <p class="text-sm font-medium text-ink-soft capitalize">{{ method }}</p>
+                <div class="mt-1.5 h-2 bg-stone-100 rounded-full overflow-hidden">
+                  <div :style="{ width: maxPayment > 0 ? (amount / maxPayment * 100) + '%' : '0' }"
                     class="h-full rounded-full transition-all" :class="paymentColors[method]"></div>
                 </div>
               </div>
-              <span class="ml-3 text-sm font-semibold text-nibbles-dark min-w-fit">R{{ amount.toFixed(2) }}</span>
+              <span class="ml-3 text-sm font-semibold text-ink min-w-fit tabular-nums">R{{ amount.toFixed(2) }}</span>
             </div>
           </div>
         </div>
 
         <!-- Top Products -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 class="font-semibold text-nibbles-dark mb-4 text-lg">Top 5 Products</h3>
-          <div v-if="topProducts.length === 0" class="text-gray-400 text-sm">No sales data yet</div>
+        <div class="card p-6">
+          <h3 class="font-semibold text-ink mb-5">Top 5 Products</h3>
+          <div v-if="topProducts.length === 0" class="text-ink-muted text-sm">No sales data yet</div>
           <div v-else class="space-y-3">
             <div v-for="(product, i) in topProducts" :key="product.id" class="flex items-center justify-between">
-              <div class="flex-1">
-                <p class="text-sm font-medium text-gray-800">{{ i + 1 }}. {{ product.name }}</p>
-                <p class="text-xs text-gray-500">{{ product.quantity }} sold</p>
+              <div class="flex items-center gap-3 flex-1">
+                <span class="w-6 h-6 rounded-lg bg-stone-100 text-ink-soft text-xs font-semibold flex items-center justify-center">{{ i + 1 }}</span>
+                <div>
+                  <p class="text-sm font-medium text-ink">{{ product.name }}</p>
+                  <p class="text-xs text-ink-muted">{{ product.quantity }} sold</p>
+                </div>
               </div>
               <div class="text-right">
-                <p class="text-sm font-semibold text-nibbles-red">{{ product.quantity }}</p>
-                <p class="text-xs text-gray-500">R{{ product.revenue.toFixed(2) }}</p>
+                <p class="text-sm font-semibold text-brand-600 tabular-nums">{{ product.quantity }}</p>
+                <p class="text-xs text-ink-muted tabular-nums">R{{ product.revenue.toFixed(2) }}</p>
               </div>
             </div>
           </div>
@@ -76,30 +75,32 @@
       </div>
 
       <!-- Right Column: Alerts & Recent Activity -->
-      <div class="space-y-6">
+      <div class="space-y-5">
         <!-- Low Stock Alerts -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 class="font-semibold text-nibbles-dark mb-4">⚠️ Low Stock</h3>
-          <div v-if="lowStockItems.length === 0" class="text-gray-400 text-sm">All stock levels healthy</div>
+        <div class="card p-6">
+          <h3 class="font-semibold text-ink mb-5 flex items-center gap-2">
+            <AppIcon name="alert" :size="18" class="text-amber-500" /> Low Stock
+          </h3>
+          <div v-if="lowStockItems.length === 0" class="text-ink-muted text-sm">All stock levels healthy</div>
           <div v-else class="space-y-2 max-h-64 overflow-y-auto">
-            <div v-for="item in lowStockItems" :key="item.id" class="p-3 bg-red-50 rounded-lg border border-red-100">
-              <p class="text-xs font-semibold text-red-700">{{ item.product_name }}</p>
-              <p class="text-xs text-red-600 mt-1">{{ item.quantity_on_hand }} / {{ item.reorder_level }} units</p>
+            <div v-for="item in lowStockItems" :key="item.id" class="p-3 bg-amber-50/70 rounded-xl border border-amber-100">
+              <p class="text-xs font-semibold text-amber-800">{{ item.product_name }}</p>
+              <p class="text-xs text-amber-700 mt-0.5 tabular-nums">{{ item.quantity_on_hand }} / {{ item.reorder_level }} units</p>
             </div>
           </div>
         </div>
 
         <!-- Recent Transactions -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 class="font-semibold text-nibbles-dark mb-4">Recent Sales</h3>
-          <div v-if="recentSales.length === 0" class="text-gray-400 text-sm">No sales yet</div>
+        <div class="card p-6">
+          <h3 class="font-semibold text-ink mb-5">Recent Sales</h3>
+          <div v-if="recentSales.length === 0" class="text-ink-muted text-sm">No sales yet</div>
           <div v-else class="space-y-2 max-h-64 overflow-y-auto">
-            <div v-for="tx in recentSales" :key="tx.id" class="p-2 bg-gray-50 rounded border border-gray-100 text-xs">
+            <div v-for="tx in recentSales" :key="tx.id" class="p-2.5 bg-stone-50 rounded-xl border border-stone-100 text-xs">
               <div class="flex justify-between">
-                <span class="font-mono text-gray-600">{{ tx.receipt_number }}</span>
-                <span class="font-semibold text-nibbles-red">R{{ parseFloat(tx.total_amount).toFixed(2) }}</span>
+                <span class="font-mono text-ink-muted">{{ tx.receipt_number }}</span>
+                <span class="font-semibold text-brand-600 tabular-nums">R{{ parseFloat(tx.total_amount).toFixed(2) }}</span>
               </div>
-              <p class="text-gray-400 mt-1">{{ formatTime(tx.created_at) }}</p>
+              <p class="text-ink-muted mt-1">{{ formatTime(tx.created_at) }}</p>
             </div>
           </div>
         </div>
@@ -109,9 +110,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../stores/auth'
+import AppIcon from '../../components/AppIcon.vue'
 
 const auth = useAuthStore()
 const branchName = ref('')
@@ -121,10 +123,17 @@ const lowStockItems = ref([])
 const recentSales = ref([])
 
 const paymentColors = {
-  cash: 'bg-green-500',
-  card: 'bg-blue-500',
-  split: 'bg-purple-500'
+  cash: 'bg-emerald-500',
+  card: 'bg-sky-500',
+  split: 'bg-violet-500'
 }
+
+const statCards = computed(() => [
+  { label: 'Total Sales', value: totalSales.value, icon: 'banknote' },
+  { label: 'Transactions', value: totalTransactions.value, icon: 'receipt' },
+  { label: 'Low Stock Items', value: lowStockCount.value, icon: 'alert', alert: true },
+  { label: 'Items Sold', value: itemsSold.value, icon: 'bag' },
+])
 
 // Computed: Date range based on timeframe
 const getDateRange = computed(() => {
@@ -154,11 +163,8 @@ const totalSales = computed(() => {
 // Computed: Total transactions
 const totalTransactions = computed(() => transactions.value.length)
 
-// Computed: Total items sold
-const totalItemsSold = computed(() => {
-  const { data: lines } = supabase.from('transaction_lines').select('quantity').in('transaction_id', transactions.value.map(t => t.id))
-  return 0 // Placeholder - will be calculated in data load
-})
+// Items sold + top products are loaded from transaction_lines in loadDashboardData
+const itemsSold = ref(0)
 
 // Computed: Low stock count
 const lowStockCount = computed(() => lowStockItems.value.length)
@@ -175,19 +181,7 @@ const paymentBreakdown = computed(() => {
 
 const maxPayment = computed(() => Math.max(...Object.values(paymentBreakdown.value), 1))
 
-// Computed: Top products
-const topProducts = computed(() => {
-  const productMap = {}
-  
-  // Aggregate sales data
-  transactions.value.forEach(tx => {
-    // This would need transaction_lines join - for now return placeholder
-  })
-  
-  return Object.values(productMap)
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5)
-})
+const topProducts = ref([])
 
 function formatTime(datetime) {
   return new Date(datetime).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
@@ -214,6 +208,29 @@ async function loadDashboardData() {
     if (txData) {
       transactions.value = txData
       recentSales.value = txData.slice(0, 10)
+
+      // Items sold + top products from transaction lines
+      const ids = txData.map(t => t.id)
+      if (ids.length) {
+        const { data: lines } = await supabase
+          .from('transaction_lines')
+          .select('quantity, line_total, products(name)')
+          .in('transaction_id', ids)
+        let sold = 0
+        const agg = {}
+        ;(lines || []).forEach(l => {
+          sold += l.quantity
+          const name = l.products?.name || 'Unknown'
+          if (!agg[name]) agg[name] = { id: name, name, quantity: 0, revenue: 0 }
+          agg[name].quantity += l.quantity
+          agg[name].revenue += parseFloat(l.line_total || 0)
+        })
+        itemsSold.value = sold
+        topProducts.value = Object.values(agg).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
+      } else {
+        itemsSold.value = 0
+        topProducts.value = []
+      }
     }
 
     // Load low stock inventory
@@ -226,5 +243,6 @@ async function loadDashboardData() {
   }
 }
 
+watch(timeframe, loadDashboardData)
 onMounted(loadDashboardData)
 </script>

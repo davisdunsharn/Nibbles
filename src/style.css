@@ -1,15 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&family=Syne:wght@600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@layer base {
+  :root {
+    color-scheme: light;
+  }
 
-* { 
-  font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply font-sans text-ink;
+    /* soft, airy tinted backdrop (LearnIt-inspired, warmed for the bakery brand) */
+    background-color: #f7f4ef;
+    background-image:
+      radial-gradient(1200px 600px at 110% -10%, rgba(187, 75, 57, 0.06), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(214, 174, 122, 0.10), transparent 55%);
+    background-attachment: fixed;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* Display face — Syne — for the brand wordmark + page titles */
+  .font-display {
+    font-family: theme('fontFamily.display');
+    letter-spacing: -0.02em;
+  }
+
+  img { background-color: transparent; }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+
+  /* Quiet, modern scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.stone.300') transparent;
+  }
+  *::-webkit-scrollbar { width: 5px; height: 5px; }
+  *::-webkit-scrollbar-thumb { @apply bg-stone-300 rounded-full; }
+  *::-webkit-scrollbar-thumb:hover { @apply bg-stone-400; }
+  *::-webkit-scrollbar-track { background: transparent; }
 }
 
-img {
-  background-color: transparent !important;
+@layer components {
+  /* Card — soft, rounded, gentle border + shadow */
+  .card {
+    @apply bg-white rounded-2xl border border-stone-200/70 shadow-card;
+  }
+
+  /* Glassmorphism surfaces (LearnIt signature) */
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    @apply rounded-2xl;
+  }
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1.5px solid #fff;
+    box-shadow: 0 20px 60px rgba(28, 25, 23, 0.12);
+    @apply rounded-2xl;
+  }
+
+  /* Lift on hover with a warm, brand-tinted glow */
+  .card-hover {
+    @apply transition-all duration-200;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(162, 58, 43, 0.12);
+    border-color: rgba(162, 58, 43, 0.22);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium
+           transition-all duration-150 focus:outline-none focus-visible:ring-2
+           focus-visible:ring-brand-500/40 disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+  /* Gradient primary with a soft tinted shadow (LearnIt-style) */
+  .btn-primary {
+    @apply btn text-white px-4 py-2.5;
+    background-image: linear-gradient(135deg, theme('colors.brand.500'), theme('colors.brand.700'));
+    box-shadow: 0 6px 16px rgba(162, 58, 43, 0.22);
+  }
+  .btn-primary:hover {
+    background-image: linear-gradient(135deg, theme('colors.brand.600'), theme('colors.brand.800'));
+    box-shadow: 0 8px 20px rgba(162, 58, 43, 0.28);
+  }
+  .btn-secondary {
+    @apply btn bg-white text-ink-soft border border-stone-200 hover:bg-stone-50 hover:border-stone-300 px-4 py-2.5;
+  }
+  .btn-ghost {
+    @apply btn text-ink-muted hover:text-ink hover:bg-stone-100 px-3 py-2;
+  }
+
+  .input {
+    @apply w-full px-3.5 py-2.5 text-sm text-ink bg-white rounded-xl border-[1.5px] border-stone-200
+           placeholder:text-stone-400 transition focus:outline-none focus:ring-2
+           focus:ring-brand-500/25 focus:border-brand-400;
+  }
+  .label {
+    @apply block text-sm font-medium text-ink-soft mb-1.5;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-success { @apply badge bg-emerald-50 text-emerald-700; }
+  .badge-danger  { @apply badge bg-red-50 text-red-700; }
+  .badge-warning { @apply badge bg-amber-50 text-amber-700; }
+  .badge-neutral { @apply badge bg-stone-100 text-stone-600; }
+
+  /* Sidebar nav item */
+  .nav-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+           text-stone-400 transition-colors hover:text-white hover:bg-white/5;
+  }
 }

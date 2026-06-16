@@ -26,21 +26,30 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function init() {
     loading.value = true
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      user.value = session.user
-      profile.value = await fetchProfile(session.user.id)
-    }
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         user.value = session.user
         profile.value = await fetchProfile(session.user.id)
-      } else {
-        user.value = null
-        profile.value = null
       }
-    })
-    loading.value = false
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          user.value = session.user
+          profile.value = await fetchProfile(session.user.id)
+        } else {
+          user.value = null
+          profile.value = null
+        }
+      })
+    } catch (err) {
+      // Never leave the app stuck on a blank screen if startup auth hiccups
+      // (e.g. transient network on a fresh device) — fall through to /login.
+      console.error('[Nibbles] Auth init failed:', err)
+      user.value = null
+      profile.value = null
+    } finally {
+      loading.value = false
+    }
   }
 
   async function login(email, password) {
@@ -80,5 +89,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (error) throw error
   }
 
-  return { user, profile, loading, isAdmin, isManager, isCashier, branchId, role, fullName, init, login, logout, resetPassword }
+  async function updatePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+  }
+
+  return { user, profile, loading, isAdmin, isManager, isCashier, branchId, role, fullName, init, login, logout, resetPassword, updatePassword }
 })
