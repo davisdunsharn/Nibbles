@@ -126,3 +126,4 @@ src/
 supabase/
   migrations/ · seeds/ · functions/
 ```
+# Nibbles
