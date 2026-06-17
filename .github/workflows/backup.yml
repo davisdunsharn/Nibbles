@@ -1,0 +1,40 @@
+name: Database backup
+
+# Automated daily backup of the Supabase Postgres database.
+# Setup (one-time):
+#   GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+#     Name:  SUPABASE_DB_URL
+#     Value: postgresql://postgres.<ref>:<password>@<host>:5432/postgres
+#            (Supabase Dashboard → Project Settings → Database → Connection string → URI)
+# The dump is uploaded as a downloadable workflow artifact (kept 90 days).
+
+on:
+  schedule:
+    - cron: '0 1 * * *'   # every day at 01:00 UTC
+  workflow_dispatch:        # allow manual runs
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Postgres client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p backups
+          STAMP=$(date +%Y%m%d-%H%M)
+          pg_dump "$SUPABASE_DB_URL" --no-owner --no-privileges --clean --if-exists \
+            --schema=public -f "backups/nibbles-$STAMP.sql"
+          gzip "backups/nibbles-$STAMP.sql"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nibbles-db-backup
+          path: backups/*.sql.gz
+          retention-days: 90

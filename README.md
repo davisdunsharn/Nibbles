@@ -72,6 +72,7 @@ see/modify their own branch; admins see everything. Helper functions
 | Function | Purpose | Secrets |
 |----------|---------|---------|
 | `create-user` | Admin-only user provisioning (service role) | `SUPABASE_SERVICE_ROLE_KEY` |
+| `delete-user` | Admin-only user removal (deletes auth account → cascades profile) | `SUPABASE_SERVICE_ROLE_KEY` |
 | `groq-insights` | Server-side Groq call for AI reports | `GROQ_API_KEY` |
 
 ```bash
@@ -126,4 +127,3 @@ src/
 supabase/
   migrations/ · seeds/ · functions/
 ```
-# Nibbles

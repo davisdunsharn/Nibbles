@@ -8,44 +8,33 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
 
   try {
-    const { email, password, first_name, last_name, role, branch_id } = await req.json()
-
-    // Verify the request is authenticated
     const authHeader = req.headers.get("Authorization")
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      })
-    }
+    if (!authHeader) return json({ error: "Missing authorization header" }, 401)
 
-    // Create Supabase admin client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Missing Supabase environment variables")
-    }
-
+    if (!supabaseUrl || !supabaseServiceKey) throw new Error("Missing Supabase environment variables")
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Create the user in auth
+    // Verify the caller is a signed-in admin (not just any authenticated user).
+    const token = authHeader.replace("Bearer ", "")
+    const { data: { user: caller } } = await supabase.auth.getUser(token)
+    if (!caller) return json({ error: "Invalid session" }, 401)
+    const { data: callerProfile } = await supabase.from("user_profiles").select("role").eq("id", caller.id).single()
+    if (callerProfile?.role !== "admin") return json({ error: "Admin access required" }, 403)
+
+    const { email, password, first_name, last_name, role, branch_id } = await req.json()
+
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     })
+    if (authError) throw new Error(`Auth error: ${authError.message}`)
 
-    if (authError) {
-      throw new Error(`Auth error: ${authError.message}`)
-    }
-
-    // Create user profile
     const { error: profileError } = await supabase.from("user_profiles").insert({
       id: authData.user.id,
       first_name,
@@ -53,25 +42,23 @@ serve(async (req) => {
       role,
       branch_id: branch_id || null,
       is_active: true,
+      created_by: caller.id,
     })
 
     if (profileError) {
-      // If profile creation fails, delete the created auth user
       await supabase.auth.admin.deleteUser(authData.user.id)
       throw new Error(`Profile error: ${profileError.message}`)
     }
 
-    return new Response(
-      JSON.stringify({ success: true, user: authData.user }),
-      {
-        status: 201,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    )
+    return json({ success: true, user: authData.user }, 201)
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    })
+    return json({ error: error.message }, 400)
   }
 })
+
+function json(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  })
+}

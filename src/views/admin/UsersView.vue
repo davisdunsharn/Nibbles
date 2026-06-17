@@ -262,8 +262,12 @@ async function confirmDelete() {
   if (!deleteItem.value) return
   deleting.value = true
   try {
-    const { error } = await supabase.from('user_profiles').delete().eq('id', deleteItem.value.id)
-    if (error) throw error
+    // Delete via edge function (service role): removes the auth account, which
+    // cascades to the profile. A direct profile delete is blocked by RLS and
+    // would orphan the auth user.
+    const { data, error } = await supabase.functions.invoke('delete-user', { body: { id: deleteItem.value.id } })
+    if (error) throw new Error(error.message || 'Delete failed')
+    if (data?.error) throw new Error(data.error)
     showDeleteConfirm.value = false
     deleteItem.value = null
     await loadData()

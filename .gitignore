@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Database backups (contain real data — keep out of git, but keep the guide)
+backups/*
+!backups/README.md
