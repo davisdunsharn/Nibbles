@@ -71,6 +71,7 @@ const navItems = [
   { path: '/admin/iot', label: 'IoT Dashboard', icon: 'radio' },
   { path: '/admin/reports', label: 'Reports & BI', icon: 'chart' },
   { path: '/admin/audit', label: 'Audit Log', icon: 'audit' },
+  { path: '/admin/announcements', label: 'Announcements', icon: 'megaphone' },
 ]
 
 async function handleLogout() {

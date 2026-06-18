@@ -18,6 +18,7 @@ const routes = [
       { path: 'iot', name: 'admin-iot', component: () => import('../views/admin/IoTDashboard.vue') },
       { path: 'reports', name: 'admin-reports', component: () => import('../views/admin/ReportsView.vue') },
       { path: 'audit', name: 'admin-audit', component: () => import('../views/admin/AuditLog.vue') },
+      { path: 'announcements', name: 'admin-announcements', component: () => import('../views/AnnouncementsView.vue') },
     ]
   },
   {
@@ -31,6 +32,7 @@ const routes = [
       { path: 'orders', name: 'manager-orders', component: () => import('../views/manager/OrdersView.vue') },
       { path: 'shifts', name: 'manager-shifts', component: () => import('../views/manager/ShiftsView.vue') },
       { path: 'sales', name: 'manager-sales', component: () => import('../views/manager/SalesView.vue') },
+      { path: 'announcements', name: 'manager-announcements', component: () => import('../views/AnnouncementsView.vue') },
     ]
   },
   {
@@ -40,6 +42,7 @@ const routes = [
     children: [
       { path: '', redirect: '/cashier/pos' },
       { path: 'pos', name: 'cashier-pos', component: () => import('../views/cashier/POSView.vue') },
+      { path: 'announcements', name: 'cashier-announcements', component: () => import('../views/AnnouncementsView.vue') },
     ]
   },
   { path: '/', redirect: '/login' },

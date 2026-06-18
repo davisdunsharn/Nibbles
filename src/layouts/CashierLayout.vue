@@ -1,9 +1,14 @@
 <template>
   <div class="h-screen bg-transparent flex flex-col">
     <header class="bg-ink px-6 py-3 flex items-center justify-between flex-shrink-0">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
         <img src="@/assets/nibbles-logo.png" alt="Nibbles Bakery" class="h-11 w-auto object-contain" />
-        <span class="text-stone-400 text-[11px] font-medium tracking-[0.18em] uppercase">Point of Sale</span>
+        <nav class="flex items-center gap-1">
+          <router-link to="/cashier/pos" class="px-3 py-1.5 rounded-lg text-sm font-medium text-stone-400 hover:text-white transition-colors" active-class="!text-white bg-white/10">Point of Sale</router-link>
+          <router-link to="/cashier/announcements" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-stone-400 hover:text-white transition-colors" active-class="!text-white bg-white/10">
+            <AppIcon name="megaphone" :size="15" /> Announcements
+          </router-link>
+        </nav>
       </div>
       <div class="flex items-center gap-4">
         <!-- Clock in/out -->

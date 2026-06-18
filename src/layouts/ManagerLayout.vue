@@ -66,6 +66,7 @@ const navItems = [
   { path: '/manager/orders', label: 'Purchase Orders', icon: 'cart' },
   { path: '/manager/shifts', label: 'Shifts', icon: 'calendar' },
   { path: '/manager/sales', label: 'Sales', icon: 'banknote' },
+  { path: '/manager/announcements', label: 'Announcements', icon: 'megaphone' },
 ]
 
 async function handleLogout() {
