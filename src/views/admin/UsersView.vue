@@ -126,7 +126,7 @@
     <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
         <h2 class="text-lg font-bold text-nibbles-dark mb-2">Delete User?</h2>
-        <p class="text-gray-600 mb-6">Are you sure you want to delete <span class="font-semibold">{{ deleteItem?.first_name }} {{ deleteItem?.last_name }}</span>? This cannot be undone.</p>
+        <p class="text-gray-600 mb-6">Remove <span class="font-semibold">{{ deleteItem?.first_name }} {{ deleteItem?.last_name }}</span>? If they have no linked records they're permanently deleted; if they have sales, shifts or orders they're deactivated so history is preserved.</p>
         <div class="flex gap-3">
           <button @click="showDeleteConfirm = false" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
             Cancel
@@ -271,7 +271,8 @@ async function confirmDelete() {
     showDeleteConfirm.value = false
     deleteItem.value = null
     await loadData()
-    toast.success('User deleted')
+    if (data?.deactivated) toast.info(data.message || 'User deactivated to preserve their records.')
+    else toast.success('User deleted')
   } catch (err) {
     toast.error(err.message)
   } finally {

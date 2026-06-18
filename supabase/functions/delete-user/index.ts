@@ -12,9 +12,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization")
-    if (!authHeader) {
-      return json({ error: "Missing authorization header" }, 401)
-    }
+    if (!authHeader) return json({ error: "Missing authorization header" }, 401)
 
     const url = Deno.env.get("SUPABASE_URL")
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
@@ -32,11 +30,26 @@ serve(async (req) => {
     if (!id) return json({ error: "Missing user id" }, 400)
     if (id === caller.id) return json({ error: "You cannot delete your own account" }, 400)
 
-    // Deleting the auth user cascades to user_profiles (FK ON DELETE CASCADE).
-    const { error } = await admin.auth.admin.deleteUser(id)
-    if (error) throw new Error(error.message)
+    // Try a full delete first. This cascades to user_profiles, but is blocked
+    // by NOT NULL references (transactions.cashier_id, shifts.staff_id, etc.).
+    const { error: delErr } = await admin.auth.admin.deleteUser(id)
 
-    return json({ success: true }, 200)
+    if (delErr) {
+      // The user has linked records (sales, shifts, orders). Deleting them would
+      // destroy business/audit history, so deactivate instead — they can no longer
+      // log in, but their records stay intact.
+      const { error: upErr } = await admin.from("user_profiles").update({ is_active: false }).eq("id", id)
+      if (upErr) throw new Error(upErr.message)
+      // Best-effort: revoke their sessions so they're logged out immediately.
+      try { await admin.auth.admin.signOut(id, "global") } catch (_) { /* ignore */ }
+      return json({
+        success: true,
+        deactivated: true,
+        message: "This user has linked records (sales, shifts or orders), so they were deactivated to preserve history rather than permanently deleted.",
+      }, 200)
+    }
+
+    return json({ success: true, deleted: true }, 200)
   } catch (error) {
     return json({ error: error.message }, 400)
   }
